@@ -2,6 +2,7 @@ package checker
 
 import (
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/models"
@@ -32,4 +33,31 @@ func CheckURL(url string, timeout time.Duration) models.CheckResult {
 		Latency: time.Since(start),
 		Error: nil, 
 	}
+}
+
+func CheckAll(urls []string, timeout time.Duration) []models.CheckResult {
+	var wg sync.WaitGroup
+
+	resultsChan := make(chan models.CheckResult, len(urls))
+
+	for _, url := range urls {
+		wg.Add(1)
+
+		go func(u string) {
+			defer wg.Done()
+			// time.Sleep(100 * time.Millisecond)
+			resultsChan <- CheckURL(u, timeout)
+		}(url)
+	}
+
+	wg.Wait()
+
+	close(resultsChan)
+
+	var results []models.CheckResult
+	for res := range resultsChan {
+		results = append(results, res)
+	}
+
+	return results
 }
