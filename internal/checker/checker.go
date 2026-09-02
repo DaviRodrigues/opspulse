@@ -10,6 +10,10 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/models"
 )
 
+type Notifier interface {
+	SendAlert(result models.CheckResult) error
+}
+
 func CheckURL(url string, timeout time.Duration) models.CheckResult {
 	start := time.Now()
 	client := &http.Client{
@@ -64,12 +68,13 @@ func CheckAll(urls []string, timeout time.Duration) []models.CheckResult {
 	return results
 }
 
-func StartMonitoring(ctx context.Context, urls []string, interval, timeout time.Duration) {
+func StartMonitoring(ctx context.Context, ntf Notifier, urls []string, interval, timeout time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	results := CheckAll(urls, timeout)
-	printResults(&results)
+	printResults(results)
+	notifierProcess(ntf, results)
 
 	for {
 		select {
@@ -78,15 +83,31 @@ func StartMonitoring(ctx context.Context, urls []string, interval, timeout time.
 			return
 		case <-ticker.C:
 			results := CheckAll(urls, timeout)
-			printResults(&results)
+			printResults(results)
+			notifierProcess(ntf, results)
 		}
 	}
 }
 
-func printResults(results *[]models.CheckResult) {
+func notifierProcess(ntf Notifier, results []models.CheckResult) {
+	if ntf == nil {
+		return
+	}
+
+	for _, res := range results {
+		if !res.IsUp {
+			if err := ntf.SendAlert(res); err != nil {
+				// colocar log aqui depois
+				fmt.Printf("Erro ao enviar alerta para %s: %v\n", res.URL, err)
+			}
+		}
+	}
+}
+
+func printResults(results []models.CheckResult) {
 	fmt.Printf("\n--- Relatório de Saúde [%s] ---\n",
 		time.Now().Format("15:04:05"))
-	for _, res := range *results {
+	for _, res := range results {
 		status := "UP"
 		if !res.IsUp {
 			status = "DOWN"
