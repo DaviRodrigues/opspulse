@@ -38,7 +38,7 @@ func createEmbed(result models.CheckResult) *discordgo.MessageEmbed {
 
 	return &discordgo.MessageEmbed{
 		Title:       title,
-		Description: fmt.Sprintf("Verrificação realizada para o endpoint: **%s**", result.URL),
+		Description: fmt.Sprintf("Verificação realizada para o endpoint: **%s**", result.URL),
 		Color:       color,
 		Timestamp:   time.Now().Format(time.RFC3339),
 		Fields: []*discordgo.MessageEmbedField{
@@ -59,18 +59,17 @@ func createEmbed(result models.CheckResult) *discordgo.MessageEmbed {
 	}
 }
 
-
 func New(token, channelId string) (*Bot, error) {
 	// ATENÇÃO: Prefixo Bot é exigido antes do token pela documentação
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		// Posso depois criar uma parte para logs e erros padrões
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("erro ao criar sessão do discord: %w", err)
 	}
 
 	err = dg.Open()
 	if err != nil {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("erro ao abrir conexão com o discord: %w", err)
 	}
 
 	return &Bot{
@@ -88,8 +87,8 @@ func (b *Bot) SendAlert(result models.CheckResult) error {
 
 	if result.Error != nil {
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-			Name: "Detalhe do Erro",
-			Value: fmt.Sprintf("`%v`", result.Error),
+			Name:   "Detalhe do Erro",
+			Value:  fmt.Sprintf("`%v`", result.Error),
 			Inline: false,
 		})
 	}
@@ -101,5 +100,3 @@ func (b *Bot) SendAlert(result models.CheckResult) error {
 
 	return err
 }
-
-// Falta criar o token e conta no discord developer. Depois disso testar
