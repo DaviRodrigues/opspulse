@@ -1,16 +1,33 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
 )
 
 func main() {
-	result := checker.CheckURL(
-		"https://github.com",
-		5*time.Second,
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
 	)
-	fmt.Printf("URL: %s | Status: %d | Latência: %v | Online: %t\n", result.URL, result.StatusCode, result.Latency, result.IsUp)
+	defer stop()
+
+	urls := []string{
+		"https://github.com",
+		"https://httpbin.org/status/200",
+		"https://httpbin.org/status/500",
+	}
+
+	fmt.Println("OpsPulse iniciado! Pressione Ctrl+C para encerrar.")
+
+	checker.StartMonitoring(ctx, urls, 5*time.Second, 3*time.Second)
+
+	fmt.Println("Aplicação finalizada com sucesso.")
 }
