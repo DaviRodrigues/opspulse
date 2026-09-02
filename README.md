@@ -1,17 +1,17 @@
-# 📡 OpsPulse
+# OpsPulse
 
 **OpsPulse** é um serviço de monitoramento e ChatOps desenvolvido em **Go**, projetado para checar a disponibilidade de serviços e integrar notificações automáticas com o **Discord**, contando com esteira completa de **DevOps (Docker, GitHub Actions e Terraform)**.
 
 ---
 
-## 📚 Documentação & Planejamento
+## Documentação & Planejamento
 
-- 📖 **[Plano de Projeto & Roadmap por Fases](docs/PROJECT_PLAN.md)**: Detalhamento do MVP, arquitetura e conceitos teóricos divididos em 6 etapas incrementais.
-- 💡 **[Banco de Ideias de Projetos Futuros](docs/ideas/other_projects_ideas.md)**: Ideias salvas para projetos posteriores (em Go ou Python).
+- **[Plano de Projeto &amp; Roadmap por Fases](docs/PROJECT_PLAN.md)**: Detalhamento do MVP, arquitetura e conceitos teóricos divididos em 6 etapas incrementais.
+- **[Banco de Ideias de Projetos Futuros](docs/ideas/other_projects_ideas.md)**: Ideias salvas para projetos posteriores (em Go ou Python).
 
 ---
 
-## 🛠️ Tecnologias e Ferramentas
+## Tecnologias e Ferramentas
 
 - **Linguagem:** Go (Golang)
 - **Comunicação / ChatOps:** Discord API (`discordgo`)
@@ -21,7 +21,7 @@
 
 ---
 
-## 🚀 Status do Projeto
+## Status do Projeto
 
 - [ ] **Fase 1:** Setup do Módulo & Health Checker Básico _(Próximo passo)_
 - [ ] **Fase 2:** Concorrência com Goroutines & Tickers
