@@ -3,9 +3,12 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -62,7 +65,11 @@ func loadStringEnv(envVariable string) (string, error) {
 	return envValue, nil
 }
 
-func Load() (Config, error) {
+func Load(filenames ...string) (Config, error) {
+	if err := godotenv.Load(filenames...); err != nil {
+		log.Printf("Error loading .env file: %v", err)
+	}
+
 	var errs []error
 
 	token, err := loadStringEnv(
