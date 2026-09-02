@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -16,13 +17,17 @@ type Config struct {
 	AlertThreshold   int
 }
 
-func loadListEnv(env_variable string) ([]string, error) {
-	envInterval := os.Getenv(env_variable)
-	if envInterval == "" || envInterval == " " {
-		return make([]string, 0), fmt.Errorf("a variável %s é obrigatória e não pode estar vazia", env_variable)
+func loadVariable(envVariable string) string {
+	return os.Getenv(envVariable)
+}
+
+func loadListEnv(envVariable string) ([]string, error) {
+	envValue := loadVariable(envVariable)
+	if strings.TrimSpace(envValue) == "" {
+		return make([]string, 0), fmt.Errorf("a variável %s é obrigatória e não pode estar vazia", envVariable)
 	}
 
-	rawUrls := strings.Split(envInterval, ",")
+	rawUrls := strings.Split(envValue, ",")
 
 	var cleanUrls []string
 	for _, u := range rawUrls {
@@ -35,42 +40,71 @@ func loadListEnv(env_variable string) ([]string, error) {
 	return cleanUrls, nil
 }
 
-func loadDurationEnv(env_variable string, defaultVal time.Duration) (time.Duration, error) {
-	envInterval := os.Getenv(env_variable)
-	if envInterval != "" {
-		checkInterval, err := time.ParseDuration(envInterval)
+func loadDurationEnv(envVariable string, defaultVal time.Duration) (time.Duration, error) {
+	envValue := loadVariable(envVariable)
+	if envValue != "" {
+		interval, err := time.ParseDuration(envValue)
 		if err != nil {
-			return 0, fmt.Errorf("Erro ao ler %v: %v. Use formatos como '30s' ou '5m'", env_variable, err)
+			return 0, fmt.Errorf("Erro ao ler %v: %v. Use formatos como '30s' ou '5m'", envVariable, err)
 		}
-		return checkInterval, nil
+		return interval, nil
 	}
 
 	return defaultVal, nil
 }
 
+func loadStringEnv(envVariable string) (string, error) {
+	envValue := loadVariable(envVariable)
+	if strings.TrimSpace(envValue) == "" {
+		return "", fmt.Errorf("Variável de ambiente %s não preenchida.", envVariable)
+	}
+
+	return envValue, nil
+}
+
 func Load() (Config, error) {
+	var errs []error
+
+	token, err := loadStringEnv(
+		"DISCORD_TOKEN",
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	channelID, err := loadStringEnv(
+		"DISCORD_CHANNEL_ID",
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
 	checkInterval, err := loadDurationEnv(
 		"CHECK_INTERVAL",
-		30 * time.Second)
+		30*time.Second)
 	if err != nil {
-		return Config{}, err
+		errs = append(errs, err)
 	}
 
 	checkTimeout, err := loadDurationEnv(
 		"CHECK_TIMEOUT",
-		10 * time.Second)
+		10*time.Second)
 	if err != nil {
-		return Config{}, err
+		errs = append(errs, err)
 	}
 
 	targetUrls, err := loadListEnv("TARGET_URLS")
 	if err != nil {
-		return Config{}, err
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		return Config{}, errors.Join(errs...)
 	}
 
 	return Config{
-		DiscordToken:     os.Getenv("DISCORD_TOKEN"),
-		DiscordChannelID: os.Getenv("DISCORD_CHANNEL_ID"),
+		DiscordToken:     token,
+		DiscordChannelID: channelID,
 		CheckInterval:    checkInterval,
 		CheckTimeout:     checkTimeout,
 		TargetURLs:       targetUrls,
