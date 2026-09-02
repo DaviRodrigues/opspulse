@@ -6,9 +6,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
+	"github.com/DaviRodrigues/opspulse/internal/config"
+	"github.com/DaviRodrigues/opspulse/internal/discord"
 )
 
 func main() {
@@ -19,15 +20,17 @@ func main() {
 	)
 	defer stop()
 
-	urls := []string{
-		"https://github.com",
-		"https://httpbin.org/status/200",
-		"https://httpbin.org/status/500",
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Printf("%v", err)
 	}
 
-	fmt.Println("OpsPulse iniciado! Pressione Ctrl+C para encerrar.")
+	bot, err := discord.New(cfg.DiscordToken, cfg.DiscordChannelID)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+	defer bot.Close()
 
-	checker.StartMonitoring(ctx, urls, 5*time.Second, 3*time.Second)
+	checker.StartMonitoring(ctx, bot, cfg.TargetURLs, cfg.CheckInterval, cfg.CheckTimeout)
 
-	fmt.Println("Aplicação finalizada com sucesso.")
 }
