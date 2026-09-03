@@ -18,14 +18,14 @@ func TestSetupLogger(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	logger, err := SetupSlog(
+	err = SetupSlog(
 		handler,
 	)
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	logger.Info("teste de log")
+	slog.Info("teste de log")
 
 	expectedFile := filepath.Join(tmpDir, fmt.Sprintf("opspulse-%s.log", time.Now().Format("2006-01-02")))
 	contentBytes, err := os.ReadFile(expectedFile)
