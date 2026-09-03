@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/models"
+	"github.com/DaviRodrigues/opspulse/internal/context"
 )
 
 func TestCheckURL(t *testing.T) {
@@ -52,7 +53,7 @@ func TestCheckURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := CheckURL(tt.url, 2*time.Second)
+			result := checkURL(context.CreateContext(), tt.url, 2*time.Second)
 
 			if result.IsUp != tt.expectedUp {
 				t.Errorf("esperava-se IsUp=%v, mas recebeu %v",
@@ -83,7 +84,7 @@ func TestCheckAll(t *testing.T) {
 
 	urls := []string{server1.URL, server2.URL, server3.URL}
 
-	results := CheckAll(urls, 5*time.Second)
+	results := CheckAll(context.CreateContext(), urls, 5*time.Second)
 	if len(results) != len(urls) {
 		t.Fatalf("esperava %d resultados, mas recebeu %d", len(urls), len(results))
 	}

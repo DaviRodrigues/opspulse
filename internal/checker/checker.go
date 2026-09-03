@@ -14,13 +14,27 @@ type Notifier interface {
 	SendAlert(result models.CheckResult) error
 }
 
-func CheckURL(url string, timeout time.Duration) models.CheckResult {
+func checkURL(ctx context.Context, url string, timeout time.Duration) models.CheckResult {
+	reqCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, url, nil)
+	if err != nil {
+		return models.CheckResult{
+			IsUp:       false,
+			Error:      err,
+			Latency:    0,
+			URL:        url,
+			StatusCode: 0,
+		}
+	}
+
 	start := time.Now()
 	client := &http.Client{
 		Timeout: timeout,
 	}
 
-	resp, err := client.Get(url)
+	resp, err := client.Do(req)
 	if err != nil {
 		return models.CheckResult{
 			IsUp:       false,
@@ -30,8 +44,8 @@ func CheckURL(url string, timeout time.Duration) models.CheckResult {
 			StatusCode: 0,
 		}
 	}
-
 	defer resp.Body.Close()
+
 	return models.CheckResult{
 		URL:        url,
 		IsUp:       resp.StatusCode >= 200 && resp.StatusCode < 400,
@@ -41,7 +55,7 @@ func CheckURL(url string, timeout time.Duration) models.CheckResult {
 	}
 }
 
-func CheckAll(urls []string, timeout time.Duration) []models.CheckResult {
+func CheckAll(ctx context.Context, urls []string, timeout time.Duration) []models.CheckResult {
 	var wg sync.WaitGroup
 
 	resultsChan := make(chan models.CheckResult, len(urls))
@@ -52,7 +66,7 @@ func CheckAll(urls []string, timeout time.Duration) []models.CheckResult {
 		go func(u string) {
 			defer wg.Done()
 			// time.Sleep(100 * time.Millisecond)
-			resultsChan <- CheckURL(u, timeout)
+			resultsChan <- checkURL(ctx, u, timeout)
 		}(url)
 	}
 
@@ -72,7 +86,7 @@ func StartMonitoring(ctx context.Context, ntf Notifier, urls []string, interval,
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	results := CheckAll(urls, timeout)
+	results := CheckAll(ctx, urls, timeout)
 	printResults(results)
 	notifierProcess(ntf, results)
 
@@ -82,7 +96,7 @@ func StartMonitoring(ctx context.Context, ntf Notifier, urls []string, interval,
 			fmt.Println("Encerrando monitoramento de forma segura")
 			return
 		case <-ticker.C:
-			results := CheckAll(urls, timeout)
+			results := CheckAll(ctx, urls, timeout)
 			printResults(results)
 			notifierProcess(ntf, results)
 		}
