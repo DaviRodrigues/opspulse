@@ -1,12 +1,19 @@
 package discord
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/DaviRodrigues/opspulse/internal/errs"
 	"github.com/DaviRodrigues/opspulse/internal/models"
 	"github.com/bwmarrin/discordgo"
 )
+
+/*
+TODO implementar comandos depois e comandos por interface do discord
+*/
 
 type Bot struct {
 	session   *discordgo.Session
@@ -59,17 +66,39 @@ func createEmbed(result models.CheckResult) *discordgo.MessageEmbed {
 	}
 }
 
+func validateRequiredVariables(token, channelId string) error {
+	var errs_v []error
+
+	if strings.TrimSpace(token) == "" {
+		errs_v = append(errs_v, fmt.Errorf("Token %w", errs.ErrConfigNotFound))
+	}
+
+	if strings.TrimSpace(channelId) == "" {
+		errs_v = append(errs_v, fmt.Errorf("Channel %w", errs.ErrConfigNotFound))
+	}
+
+	if len(errs_v) > 0 {
+		return errors.Join(errs_v...)
+	}
+
+	return nil
+}
+
 func New(token, channelId string) (*Bot, error) {
+	if err := validateRequiredVariables(token, channelId); err != nil {
+		return nil, err
+	}
+
 	// ATENÇÃO: Prefixo Bot é exigido antes do token pela documentação
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		// Posso depois criar uma parte para logs e erros padrões
-		return nil, fmt.Errorf("erro ao criar sessão do discord: %w", err)
+		return nil, fmt.Errorf("%w session (more info: %w)", errs.ErrDiscordAuth, err)
 	}
 
 	err = dg.Open()
 	if err != nil {
-		return nil, fmt.Errorf("erro ao abrir conexão com o discord: %w", err)
+		return nil, fmt.Errorf("%w open conection (more info: %w)", errs.ErrDiscordAuth, err)
 	}
 
 	return &Bot{
