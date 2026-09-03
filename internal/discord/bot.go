@@ -3,6 +3,7 @@ package discord
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -92,14 +93,23 @@ func New(token, channelId string) (*Bot, error) {
 	// ATENÇÃO: Prefixo Bot é exigido antes do token pela documentação
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
-		// Posso depois criar uma parte para logs e erros padrões
+		slog.Error("Session Unavaible",
+			"errType", errs.ErrDiscordAuth,
+			"error", err,
+		)
 		return nil, fmt.Errorf("%w session (more info: %w)", errs.ErrDiscordAuth, err)
 	}
 
 	err = dg.Open()
 	if err != nil {
+		slog.Error("Connection Error",
+			"errType", errs.ErrDiscordAuth,
+			"error", err,
+		)
 		return nil, fmt.Errorf("%w open conection (more info: %w)", errs.ErrDiscordAuth, err)
 	}
+
+	slog.Info("Conexão com Discord estabelecida", "channel_id", channelId)
 
 	return &Bot{
 		session:   dg,
@@ -108,6 +118,8 @@ func New(token, channelId string) (*Bot, error) {
 }
 
 func (b *Bot) Close() {
+	slog.Info("Conexão com Discord encerrada")
+
 	b.session.Close()
 }
 

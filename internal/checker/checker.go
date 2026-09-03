@@ -3,6 +3,7 @@ package checker
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -101,7 +102,7 @@ func StartMonitoring(ctx context.Context, ntf Notifier, urls []string, interval,
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("Encerrando monitoramento de forma segura")
+			slog.Info("🛑 Encerrando monitoramento de forma segura")
 			return
 		case <-ticker.C:
 			results := CheckAll(ctx, urls, timeout)
@@ -119,8 +120,10 @@ func notifierProcess(ntf Notifier, results []models.CheckResult) {
 	for _, res := range results {
 		if !res.IsUp {
 			if err := ntf.SendAlert(res); err != nil {
-				// colocar log aqui depois
-				fmt.Printf("Erro ao enviar alerta para %s: %v\n", res.URL, err)
+				slog.Error("Falha ao enviar alerta para o notificador",
+					"url", res.URL,
+					"error", err,
+				)
 			}
 		}
 	}
@@ -130,12 +133,21 @@ func printResults(results []models.CheckResult) {
 	fmt.Printf("\n--- Relatório de Saúde [%s] ---\n",
 		time.Now().Format("15:04:05"))
 	for _, res := range results {
-		status := "UP"
-		if !res.IsUp {
-			status = "DOWN"
+		if res.IsUp {
+			slog.Info("Serviço operacional",
+				"status", "UP",
+				"url", res.URL,
+				"code", res.StatusCode,
+				"latency", res.Latency.String(),
+			)
+		} else {
+			slog.Warn("Serviço com problemas",
+				"status", "DOWN",
+				"url", res.URL,
+				"code", res.StatusCode,
+				"latency", res.Latency.String(),
+				"error", res.Error,
+			)
 		}
-
-		fmt.Printf("[%s] %s | Código: %d | Latência: %v\n",
-			status, res.URL, res.StatusCode, res.Latency)
 	}
 }
