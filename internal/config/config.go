@@ -9,7 +9,13 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/DaviRodrigues/opspulse/internal/errs"
 )
+
+/*
+TODO: fazer uma alteração para formas diferentes de carregas as urls
+seja por arquivo, por env, por api, etc
+*/
 
 type Config struct {
 	DiscordToken     string
@@ -27,7 +33,7 @@ func loadVariable(envVariable string) string {
 func loadListEnv(envVariable string) ([]string, error) {
 	envValue := loadVariable(envVariable)
 	if strings.TrimSpace(envValue) == "" {
-		return make([]string, 0), fmt.Errorf("a variável %s é obrigatória e não pode estar vazia", envVariable)
+		return make([]string, 0), fmt.Errorf("%w: %s", errs.ErrConfigNotFound, envVariable)
 	}
 
 	rawUrls := strings.Split(envValue, ",")
@@ -48,7 +54,7 @@ func loadDurationEnv(envVariable string, defaultVal time.Duration) (time.Duratio
 	if envValue != "" {
 		interval, err := time.ParseDuration(envValue)
 		if err != nil {
-			return 0, fmt.Errorf("Erro ao ler %v: %v. Use formatos como '30s' ou '5m'", envVariable, err)
+			return 0, fmt.Errorf("%w: %v", errs.ErrInvalidInterval, envVariable)
 		}
 		return interval, nil
 	}
@@ -56,10 +62,16 @@ func loadDurationEnv(envVariable string, defaultVal time.Duration) (time.Duratio
 	return defaultVal, nil
 }
 
-func loadStringEnv(envVariable string) (string, error) {
+func loadStringEnv(envVariable string, isEmpty bool) (string, error) {
 	envValue := loadVariable(envVariable)
+	if isEmpty {
+		fmt.Printf("Essa variável %v pode ser vazia, mas algumas funções podem não funcionar", envVariable)
+		return "", nil
+	}
+
+
 	if strings.TrimSpace(envValue) == "" {
-		return "", fmt.Errorf("Variável de ambiente %s não preenchida.", envVariable)
+		return "", fmt.Errorf("%w: %s", errs.ErrConfigNotFound, envVariable)
 	}
 
 	return envValue, nil
@@ -67,6 +79,7 @@ func loadStringEnv(envVariable string) (string, error) {
 
 func Load(filenames ...string) (Config, error) {
 	if err := godotenv.Load(filenames...); err != nil {
+		// aplicar log corretamente aqui depois
 		log.Printf("Error loading .env file: %v", err)
 	}
 
@@ -74,6 +87,7 @@ func Load(filenames ...string) (Config, error) {
 
 	token, err := loadStringEnv(
 		"DISCORD_TOKEN",
+		true,
 	)
 	if err != nil {
 		errs = append(errs, err)
@@ -81,6 +95,7 @@ func Load(filenames ...string) (Config, error) {
 
 	channelID, err := loadStringEnv(
 		"DISCORD_CHANNEL_ID",
+		true,
 	)
 	if err != nil {
 		errs = append(errs, err)
