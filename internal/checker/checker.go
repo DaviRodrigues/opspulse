@@ -7,8 +7,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DaviRodrigues/opspulse/internal/errs"
 	"github.com/DaviRodrigues/opspulse/internal/models"
 )
+
+/*
+TODO: validar depois formas de enviar notificação por outros serviços email, slack e etc..
+Além disso, valdar de pegar outras informações fora o básico do healthcheck: headers, security, body e validar
+serviços tipo banco de dados etc...
+Fazer uma forma de ter um checker pra UP constante ou de tempos em tempos altos, o DOWN ainda é o mais importante
+*/
 
 type Notifier interface {
 	SendAlert(result models.CheckResult) error
@@ -22,7 +30,7 @@ func checkURL(ctx context.Context, url string, timeout time.Duration) models.Che
 	if err != nil {
 		return models.CheckResult{
 			IsUp:       false,
-			Error:      err,
+			Error:      fmt.Errorf("%w (more info: %w)", errs.ErrServiceDown, err),
 			Latency:    0,
 			URL:        url,
 			StatusCode: 0,
@@ -38,7 +46,7 @@ func checkURL(ctx context.Context, url string, timeout time.Duration) models.Che
 	if err != nil {
 		return models.CheckResult{
 			IsUp:       false,
-			Error:      err,
+			Error:      fmt.Errorf("%w (more info: %w)", errs.ErrServiceDown, err),
 			Latency:    time.Since(start),
 			URL:        url,
 			StatusCode: 0,
