@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DaviRodrigues/opspulse/internal/config"
 	"github.com/DaviRodrigues/opspulse/internal/errs"
-	"github.com/DaviRodrigues/opspulse/internal/models"
 )
 
 /*
@@ -19,17 +19,25 @@ serviços tipo banco de dados etc...
 Fazer uma forma de ter um checker pra UP constante ou de tempos em tempos altos, o DOWN ainda é o mais importante
 */
 
-type Notifier interface {
-	SendAlert(result models.CheckResult) error
+type CheckResult struct {
+	URL string
+	StatusCode int
+	Latency time.Duration
+	IsUp bool
+	Error error
 }
 
-func checkURL(ctx context.Context, url string, timeout time.Duration) models.CheckResult {
+type Notifier interface {
+	SendAlert(result CheckResult) error
+}
+
+func checkURL(ctx context.Context, url string, timeout time.Duration) CheckResult {
 	reqCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, url, nil)
 	if err != nil {
-		return models.CheckResult{
+		return CheckResult{
 			IsUp:       false,
 			Error:      fmt.Errorf("%w (more info: %w)", errs.ErrServiceDown, err),
 			Latency:    0,
@@ -45,7 +53,7 @@ func checkURL(ctx context.Context, url string, timeout time.Duration) models.Che
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return models.CheckResult{
+		return CheckResult{
 			IsUp:       false,
 			Error:      fmt.Errorf("%w (more info: %w)", errs.ErrServiceDown, err),
 			Latency:    time.Since(start),
@@ -55,7 +63,7 @@ func checkURL(ctx context.Context, url string, timeout time.Duration) models.Che
 	}
 	defer resp.Body.Close()
 
-	return models.CheckResult{
+	return CheckResult{
 		URL:        url,
 		IsUp:       resp.StatusCode >= 200 && resp.StatusCode < 400,
 		StatusCode: resp.StatusCode,
@@ -64,10 +72,10 @@ func checkURL(ctx context.Context, url string, timeout time.Duration) models.Che
 	}
 }
 
-func CheckAll(ctx context.Context, urls []string, timeout time.Duration) []models.CheckResult {
+func CheckAll(ctx context.Context, urls []string, timeout time.Duration) []CheckResult {
 	var wg sync.WaitGroup
 
-	resultsChan := make(chan models.CheckResult, len(urls))
+	resultsChan := make(chan CheckResult, len(urls))
 
 	for _, url := range urls {
 		wg.Add(1)
@@ -83,7 +91,7 @@ func CheckAll(ctx context.Context, urls []string, timeout time.Duration) []model
 
 	close(resultsChan)
 
-	var results []models.CheckResult
+	var results []CheckResult
 	for res := range resultsChan {
 		results = append(results, res)
 	}
@@ -91,11 +99,11 @@ func CheckAll(ctx context.Context, urls []string, timeout time.Duration) []model
 	return results
 }
 
-func StartMonitoring(ctx context.Context, ntf Notifier, urls []string, interval, timeout time.Duration) {
-	ticker := time.NewTicker(interval)
+func StartMonitoring(ctx context.Context, ntf Notifier, triggerChan <-chan struct{}, cfg config.Config) {
+	ticker := time.NewTicker(cfg.Monitor.Interval)
 	defer ticker.Stop()
 
-	results := CheckAll(ctx, urls, timeout)
+	results := CheckAll(ctx, cfg.Monitor.TargetURLs, cfg.Monitor.Timeout)
 	printResults(results)
 	notifierProcess(ntf, results)
 
@@ -105,14 +113,17 @@ func StartMonitoring(ctx context.Context, ntf Notifier, urls []string, interval,
 			slog.Info("🛑 Encerrando monitoramento de forma segura")
 			return
 		case <-ticker.C:
-			results := CheckAll(ctx, urls, timeout)
+			results := CheckAll(ctx, cfg.Monitor.TargetURLs, cfg.Monitor.Timeout)
 			printResults(results)
 			notifierProcess(ntf, results)
+		case <-triggerChan:
+			ticker.Reset(cfg.Monitor.Interval)
+			slog.Info("🔄 Intervalo de monitoramento reiniciado por comando externo")
 		}
 	}
 }
 
-func notifierProcess(ntf Notifier, results []models.CheckResult) {
+func notifierProcess(ntf Notifier, results []CheckResult) {
 	if ntf == nil {
 		return
 	}
@@ -129,7 +140,7 @@ func notifierProcess(ntf Notifier, results []models.CheckResult) {
 	}
 }
 
-func printResults(results []models.CheckResult) {
+func printResults(results []CheckResult) {
 	fmt.Printf("\n--- Relatório de Saúde [%s] ---\n",
 		time.Now().Format("15:04:05"))
 	for _, res := range results {
