@@ -11,6 +11,8 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/discord"
 )
 
+// TODO preciso depois testar a integração disso de forma manual (remova o .env.test NÃO ESQUECER)
+
 func main() {
 	handler, err := logger.HandlerDefaultText(slog.LevelInfo, "./log")
 	if err != nil {
