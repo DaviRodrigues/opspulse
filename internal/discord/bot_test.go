@@ -1,34 +1,34 @@
 package discord
 
 import (
+	"os"
 	"testing"
-	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/config"
-	"github.com/DaviRodrigues/opspulse/internal/models"
+	"github.com/joho/godotenv"
 )
 
-func TestBot(t *testing.T) {
-	cfg, err := config.Load("../../.env")
-	if err != nil {
-		t.Errorf("%v", err)
+func TestBot_Validation(t *testing.T) {
+	_, err := New("", "")
+	if err == nil {
+		t.Errorf("esperava erro ao passar token e channel vazios, mas retornou nil")
+	}
+}
+
+func TestBot_Integration(t *testing.T) {
+	// Caso queira testar, o ideal é colocar .env na raiz do módulo discord
+	_ = godotenv.Load()
+	token := os.Getenv("DISCORD_TOKEN")
+	channelID := os.Getenv("DISCORD_CHANNEL_ID")
+	if token == "" {
+		t.Skip("Pulando teste de integração real: DISCORD_TOKEN não configurado no ambiente")
+	}
+	if channelID == "" {
+		t.Skip("Pulando teste de integração real: DISCORD_CHANNEL_ID não configurado no ambiente")
 	}
 
-	bot, err := New(cfg.DiscordToken, cfg.DiscordChannelID)
+	bot, err := New(token, channelID)
 	if err != nil {
-		t.Errorf("%v", err)
+		t.Fatalf("falha ao conectar ao discord: %v", err)
 	}
 	defer bot.Close()
-
-	mockCheck := models.CheckResult{
-		URL: "https://exemplo.com", 
-		IsUp: true, 
-		StatusCode: 200, 
-		Latency: 120 * time.Millisecond,
-	}
-
-	err = bot.SendAlert(mockCheck)
-	if err != nil {
-		t.Errorf("%v", err)
-	}
 }

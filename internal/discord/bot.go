@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
+	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/errs"
-	"github.com/DaviRodrigues/opspulse/internal/models"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -19,52 +18,6 @@ TODO implementar comandos depois e comandos por interface do discord
 type Bot struct {
 	session   *discordgo.Session
 	channelID string
-}
-
-func titleAndColorStatus(result models.CheckResult) (int, string) {
-	var color int
-	var title string
-
-	if result.IsUp {
-		color = 0x2ECC71 // Verde em Hexadecimal
-		title = "🟢 [UP] Serviço Operacional"
-	} else {
-		color = 0xE74C3C // Vermelho em Hexadecimal
-		title = "🔴 [DOWN] Alerta de Indisponibilidade"
-	}
-
-	return color, title
-}
-
-func createEmbed(result models.CheckResult) *discordgo.MessageEmbed {
-	color, title := titleAndColorStatus(result)
-
-	statusText := fmt.Sprintf("%d", result.StatusCode)
-	if result.StatusCode == 0 {
-		statusText = "N/A (Falha de Conexão)"
-	}
-
-	return &discordgo.MessageEmbed{
-		Title:       title,
-		Description: fmt.Sprintf("Verificação realizada para o endpoint: **%s**", result.URL),
-		Color:       color,
-		Timestamp:   time.Now().Format(time.RFC3339),
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "Status HTTP",
-				Value:  statusText,
-				Inline: true,
-			},
-			{
-				Name:   "Latência",
-				Value:  result.Latency.String(),
-				Inline: true,
-			},
-		},
-		Footer: &discordgo.MessageEmbedFooter{
-			Text: "OpsPulse Monitor",
-		},
-	}
 }
 
 func validateRequiredVariables(token, channelId string) error {
@@ -123,7 +76,7 @@ func (b *Bot) Close() {
 	b.session.Close()
 }
 
-func (b *Bot) SendAlert(result models.CheckResult) error {
+func (b *Bot) SendAlert(result checker.CheckResult) error {
 	embed := createEmbed(result)
 
 	if result.Error != nil {
@@ -140,4 +93,32 @@ func (b *Bot) SendAlert(result models.CheckResult) error {
 	)
 
 	return err
+}
+
+// TODO ambas funções iguais a baixo, depois posso fazer uma com parâmetros, assim ficará melhor
+
+func (b *Bot) handleStatus(s *discordgo.Session, i *discordgo.InteractionCreate, checkFn CheckerFunc) {
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds:     createStatusSummaryEmbed(checkFn()),
+			Components: []discordgo.MessageComponent{createRecheckButton()},
+		},
+	})
+	if err != nil {
+		slog.Error("Erro ao responder comando /status", "error", err)
+	}
+}
+
+func (b *Bot) handleRecheckButton(s *discordgo.Session, i *discordgo.InteractionCreate, checkFn CheckerFunc) {
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseUpdateMessage,
+		Data: &discordgo.InteractionResponseData{
+			Embeds:     createStatusSummaryEmbed(checkFn()),
+			Components: []discordgo.MessageComponent{createRecheckButton()},
+		},
+	})
+	if err != nil {
+		slog.Error("Erro ao atualizar mensagem pelo botão", "error", err)
+	}
 }
