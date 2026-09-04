@@ -3,13 +3,13 @@ package config
 import (
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/DaviRodrigues/opspulse/internal/errs"
+	"github.com/joho/godotenv"
 )
 
 /*
@@ -18,25 +18,47 @@ seja por arquivo, por env, por api, etc
 */
 
 type Config struct {
-	DiscordToken     string
-	DiscordChannelID string
-	CheckInterval    time.Duration
-	CheckTimeout     time.Duration
-	TargetURLs       []string
-	AlertThreshold   int
+	Discord DiscordConfig
+	Monitor MonitorConfig
 }
 
-func loadVariable(envVariable string) string {
-	return os.Getenv(envVariable)
+type DiscordConfig struct {
+	Token     string
+	ChannelID string
+	GuildID   string
+}
+type MonitorConfig struct {
+	Interval       time.Duration
+	Timeout        time.Duration
+	TargetURLs     []string
+	AlertThreshold int
+}
+
+func LoadVariable(envVariable string, fallback string) (string, error) {
+	value, exists := os.LookupEnv(envVariable)
+	if !exists {
+		slog.Error("Variável não existe no .env",
+			"variable", envVariable,
+		)
+		return "", errs.ErrConfigNotFound
+	}
+
+	if strings.TrimSpace(value) == "" {
+		return fallback, nil
+	}
+	return value, nil
 }
 
 func loadListEnv(envVariable string) ([]string, error) {
-	envValue := loadVariable(envVariable)
-	if strings.TrimSpace(envValue) == "" {
-		return make([]string, 0), fmt.Errorf("%w: %s", errs.ErrConfigNotFound, envVariable)
+	value, err := LoadVariable(
+		envVariable,
+		"https://github.com/, https://www.google.com/",
+	)
+	if err != nil {
+		return make([]string, 0), err
 	}
 
-	rawUrls := strings.Split(envValue, ",")
+	rawUrls := strings.Split(value, ",")
 
 	var cleanUrls []string
 	for _, u := range rawUrls {
@@ -49,68 +71,47 @@ func loadListEnv(envVariable string) ([]string, error) {
 	return cleanUrls, nil
 }
 
-func loadDurationEnv(envVariable string, defaultVal time.Duration) (time.Duration, error) {
-	envValue := loadVariable(envVariable)
-	if envValue != "" {
-		interval, err := time.ParseDuration(envValue)
-		if err != nil {
-			return 0, fmt.Errorf("%w: %v", errs.ErrInvalidInterval, envVariable)
-		}
-		return interval, nil
+func loadDurationEnv(envVariable string) (time.Duration, error) {
+	value, err := LoadVariable(
+		envVariable,
+		(30*time.Second).String(),
+	)
+	if err != nil {
+		return 0, err
 	}
 
-	return defaultVal, nil
-}
-
-func loadStringEnv(envVariable string, isEmpty bool) (string, error) {
-	envValue := loadVariable(envVariable)
-	if isEmpty {
-		fmt.Printf("Essa variável %v pode ser vazia, mas algumas funções podem não funcionar", envVariable)
-		return "", nil
+	interval, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, fmt.Errorf("%w: %v", errs.ErrInvalidInterval, value)
 	}
-
-
-	if strings.TrimSpace(envValue) == "" {
-		return "", fmt.Errorf("%w: %s", errs.ErrConfigNotFound, envVariable)
-	}
-
-	return envValue, nil
+	return interval, nil
 }
 
 func Load(filenames ...string) (Config, error) {
-	if err := godotenv.Load(filenames...); err != nil {
-		// aplicar log corretamente aqui depois
-		log.Printf("Error loading .env file: %v", err)
-	}
+	_ = godotenv.Load(filenames...)
 
 	var errs []error
 
-	token, err := loadStringEnv(
+	token, err := LoadVariable(
 		"DISCORD_TOKEN",
-		true,
+		"",
 	)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	channelID, err := loadStringEnv(
-		"DISCORD_CHANNEL_ID",
-		true,
+	channelID, err := LoadVariable("DISCORD_CHANNEL_ID","",
 	)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	checkInterval, err := loadDurationEnv(
-		"CHECK_INTERVAL",
-		30*time.Second)
+	checkInterval, err := loadDurationEnv("CHECK_INTERVAL")
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	checkTimeout, err := loadDurationEnv(
-		"CHECK_TIMEOUT",
-		10*time.Second)
+	checkTimeout, err := loadDurationEnv("CHECK_TIMEOUT")
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -125,11 +126,16 @@ func Load(filenames ...string) (Config, error) {
 	}
 
 	return Config{
-		DiscordToken:     token,
-		DiscordChannelID: channelID,
-		CheckInterval:    checkInterval,
-		CheckTimeout:     checkTimeout,
-		TargetURLs:       targetUrls,
-		AlertThreshold:   0,
+		DiscordConfig{
+			Token:     token,
+			ChannelID: channelID,
+			GuildID:   "", // TODO: preciso colocar como variável de ambiente depois
+		},
+		MonitorConfig{
+			Interval:       checkInterval,
+			Timeout:        checkTimeout,
+			TargetURLs:     targetUrls,
+			AlertThreshold: 0,
+		},
 	}, nil
 }

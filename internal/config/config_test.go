@@ -17,16 +17,16 @@ func TestLoadOk(t *testing.T) {
 		t.Fatalf("não esperava erro, mas recebeu: %v", err)
 	}
 
-	if len(cfg.TargetURLs) != 2 {
-		t.Errorf("esperava 2 URLs, recebeu: %d", len(cfg.TargetURLs))
+	if len(cfg.Monitor.TargetURLs) != 2 {
+		t.Errorf("esperava 2 URLs, recebeu: %d", len(cfg.Monitor.TargetURLs))
 	}
 
-	if cfg.CheckInterval != 15*time.Second {
-		t.Errorf("esperava intervalo 15s, recebeu: %v", cfg.CheckInterval)
+	if cfg.Monitor.Interval != 15*time.Second {
+		t.Errorf("esperava intervalo 15s, recebeu: %v", cfg.Monitor.Interval)
 	}
 
-	if cfg.DiscordToken != "meu-token-secreto" {
-		t.Errorf("esperava token 'meu-token-secreto', recebeu: %s", cfg.DiscordToken)
+	if cfg.Discord.Token != "meu-token-secreto" {
+		t.Errorf("esperava token 'meu-token-secreto', recebeu: %s", cfg.Discord.Token)
 	}
 }
 
