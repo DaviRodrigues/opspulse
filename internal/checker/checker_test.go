@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/models"
 	"github.com/DaviRodrigues/opspulse/internal/context"
 )
 
@@ -89,7 +88,7 @@ func TestCheckAll(t *testing.T) {
 		t.Fatalf("esperava %d resultados, mas recebeu %d", len(urls), len(results))
 	}
 
-	resultsMap := make(map[string]models.CheckResult)
+	resultsMap := make(map[string]CheckResult)
 	for _, res := range results {
 		resultsMap[res.URL] = res
 	}
