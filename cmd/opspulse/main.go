@@ -8,7 +8,7 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/config"
 	"github.com/DaviRodrigues/opspulse/internal/context"
 	"github.com/DaviRodrigues/opspulse/internal/logger"
-	// "github.com/DaviRodrigues/opspulse/internal/discord"
+	"github.com/DaviRodrigues/opspulse/internal/discord"
 )
 
 func main() {
@@ -33,11 +33,23 @@ func main() {
 		os.Exit(1)
 	}
 
-//	bot, err := discord.New(cfg.DiscordToken, cfg.DiscordChannelID)
-//	if err != nil {
-//		slog.Warn("Falha ao iniciar bot", "error", err)
-//	}
-//	defer bot.Close()
+	bot, err := discord.New(cfg.Discord.Token, cfg.Discord.ChannelID)
+	if err != nil {
+		slog.Warn("Falha ao iniciar bot", "error", err)
+	}
+	defer bot.Close()
 
-	checker.StartMonitoring(ctx, nil, cfg.TargetURLs, cfg.CheckInterval, cfg.CheckTimeout)
+	triggerChan := make(chan struct{}, 1)
+	bot.RegisterHandlers(func() []checker.CheckResult {
+		results := checker.CheckAll(ctx, cfg.Monitor.TargetURLs, cfg.Monitor.Timeout)
+		
+		select {
+		case triggerChan <-struct{}{}:
+		default:
+		}
+
+		return results
+	})
+
+	checker.StartMonitoring(ctx, bot, triggerChan, cfg)
 }
