@@ -8,6 +8,7 @@ import (
 func TestLoadOk(t *testing.T) {
 	t.Setenv("DISCORD_TOKEN", "meu-token-secreto")
 	t.Setenv("DISCORD_CHANNEL_ID", "123456789")
+	t.Setenv("DISCORD_GUILD_ID", "123456789")
 	t.Setenv("TARGET_URLS", "https://google.com, https://github.com")
 	t.Setenv("CHECK_INTERVAL", "15s")
 	t.Setenv("CHECK_TIMEOUT", "5s")
