@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
+	"github.com/DaviRodrigues/opspulse/internal/config"
 	"github.com/DaviRodrigues/opspulse/internal/errs"
 	"github.com/bwmarrin/discordgo"
 )
@@ -16,8 +17,8 @@ TODO implementar comandos depois e comandos por interface do discord
 */
 
 type Bot struct {
-	session   *discordgo.Session
-	channelID string
+	session *discordgo.Session
+	configs *config.DiscordConfig
 }
 
 func validateRequiredVariables(token, channelId string) error {
@@ -38,13 +39,13 @@ func validateRequiredVariables(token, channelId string) error {
 	return nil
 }
 
-func New(token, channelId string) (*Bot, error) {
-	if err := validateRequiredVariables(token, channelId); err != nil {
+func New(cfgDiscord *config.DiscordConfig) (*Bot, error) {
+	if err := validateRequiredVariables(cfgDiscord.Token, cfgDiscord.ChannelID); err != nil {
 		return nil, err
 	}
 
 	// ATENÇÃO: Prefixo Bot é exigido antes do token pela documentação
-	dg, err := discordgo.New("Bot " + token)
+	dg, err := discordgo.New("Bot " + cfgDiscord.Token)
 	if err != nil {
 		slog.Error("Session Unavaible",
 			"errType", errs.ErrDiscordAuth,
@@ -62,11 +63,11 @@ func New(token, channelId string) (*Bot, error) {
 		return nil, fmt.Errorf("%w open conection (more info: %w)", errs.ErrDiscordAuth, err)
 	}
 
-	slog.Info("Conexão com Discord estabelecida", "channel_id", channelId)
+	slog.Info("Conexão com Discord estabelecida!")
 
 	return &Bot{
-		session:   dg,
-		channelID: channelId,
+		session: dg,
+		configs: cfgDiscord,
 	}, nil
 }
 
@@ -88,11 +89,26 @@ func (b *Bot) SendAlert(result checker.CheckResult) error {
 	}
 
 	_, err := b.session.ChannelMessageSendEmbed(
-		b.channelID,
+		b.configs.ChannelID,
 		embed,
 	)
 
 	return err
+}
+
+func (b *Bot) RegisterCommands() error {
+	_, err := b.session.ApplicationCommandBulkOverwrite(
+		b.session.State.User.ID, 
+		b.configs.GuildID, 
+		commands,
+	)
+	if err != nil {
+		slog.Error("Failed to register commands in discord app", "error", err)
+		return err
+	}
+
+	slog.Info("Successfully registered all application commands!")
+	return nil
 }
 
 // TODO ambas funções iguais a baixo, depois posso fazer uma com parâmetros, assim ficará melhor
