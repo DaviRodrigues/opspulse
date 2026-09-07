@@ -25,7 +25,7 @@
 
 - [X] **Fase 1:** Setup do Módulo & Health Checker Básico _(Próximo passo)_
 - [X] **Fase 2:** Concorrência com Goroutines & Tickers
-- [ ] **Fase 3:** Integração com Discord Bot
+- [X] **Fase 3:** Integração com Discord Bot
 - [ ] **Fase 4:** Dockerização & Docker Compose
 - [ ] **Fase 5:** CI/CD com GitHub Actions
 - [ ] **Fase 6:** Infraestrutura com Terraform
