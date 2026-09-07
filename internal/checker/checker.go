@@ -99,11 +99,11 @@ func CheckAll(ctx context.Context, urls []string, timeout time.Duration) []Check
 	return results
 }
 
-func StartMonitoring(ctx context.Context, ntf Notifier, triggerChan <-chan struct{}, cfg config.Config) {
-	ticker := time.NewTicker(cfg.Monitor.Interval)
+func StartMonitoring(ctx context.Context, ntf Notifier, triggerChan <-chan struct{}, cfg config.MonitorConfig) {
+	ticker := time.NewTicker(cfg.Interval)
 	defer ticker.Stop()
 
-	results := CheckAll(ctx, cfg.Monitor.TargetURLs, cfg.Monitor.Timeout)
+	results := CheckAll(ctx, cfg.TargetURLs, cfg.Timeout)
 	printResults(results)
 	notifierProcess(ntf, results)
 
@@ -113,11 +113,11 @@ func StartMonitoring(ctx context.Context, ntf Notifier, triggerChan <-chan struc
 			slog.Info("🛑 Encerrando monitoramento de forma segura")
 			return
 		case <-ticker.C:
-			results := CheckAll(ctx, cfg.Monitor.TargetURLs, cfg.Monitor.Timeout)
+			results := CheckAll(ctx, cfg.TargetURLs, cfg.Timeout)
 			printResults(results)
 			notifierProcess(ntf, results)
 		case <-triggerChan:
-			ticker.Reset(cfg.Monitor.Interval)
+			ticker.Reset(cfg.Interval)
 			slog.Info("🔄 Intervalo de monitoramento reiniciado por comando externo")
 		}
 	}
