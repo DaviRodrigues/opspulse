@@ -121,6 +121,11 @@ func Load(filenames ...string) (Config, error) {
 		errs = append(errs, err)
 	}
 
+	guildID, err := LoadVariable("DISCORD_GUILD_ID", "")
+	if err != nil {
+		errs = append(errs, err)
+	}
+
 	if len(errs) > 0 {
 		return Config{}, errors.Join(errs...)
 	}
@@ -129,7 +134,7 @@ func Load(filenames ...string) (Config, error) {
 		DiscordConfig{
 			Token:     token,
 			ChannelID: channelID,
-			GuildID:   "", // TODO: preciso colocar como variável de ambiente depois
+			GuildID:   guildID,
 		},
 		MonitorConfig{
 			Interval:       checkInterval,
