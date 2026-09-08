@@ -35,24 +35,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	var bot *discord.Bot
-	triggerChan := make(chan struct{}, 1)
-	bot, err = discord.New(&cfg.Discord)
+	var notifier checker.Notifier
+	var triggerChan chan struct{}
+	bot, err := discord.New(&cfg.Discord)
 	if err != nil {
 		slog.Warn("Não foi possível iniciar o bot do Discord, continuando apenas com monitor local", "error", err)
 	} else {
 		defer bot.Close()
-		bot.RegisterCommands()
-		bot.RegisterHandlers(func() []checker.CheckResult {
-			results := checker.CheckAll(ctx, cfg.Monitor.TargetURLs, cfg.Monitor.Timeout)
-
-			select {
-			case triggerChan <- struct{}{}:
-			default:
-			}
-			return results
-		})
+		triggerChan, err = bot.Setup(ctx, cfg.Monitor)
+		if err != nil {
+			slog.Error("Falha crítica ao setar configurações do bot", "error", err)
+			os.Exit(1)
+		}
+		notifier = bot
 	}
 
-	checker.StartMonitoring(ctx, bot, triggerChan, cfg.Monitor)
+	checker.StartMonitoring(ctx, notifier, triggerChan, cfg.Monitor)
 }
