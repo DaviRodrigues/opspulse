@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -71,6 +72,24 @@ func New(cfgDiscord *config.DiscordConfig) (*Bot, error) {
 	}, nil
 }
 
+func (b *Bot) Setup(ctx context.Context, cfg config.MonitorConfig) (chan struct{}, error) {
+	if err := b.RegisterCommands(); err != nil {
+		return nil, err
+	}
+
+	// TODO: preciso melhorar a criação/registro dos handlers, ta muito acoplado com a função anônima
+	triggerChan := make(chan struct{}, 1)
+	b.RegisterHandlers(func() []checker.CheckResult {
+		select {
+		case triggerChan <- struct{}{}:
+		default:
+		}
+		return checker.CheckAll(ctx, cfg.TargetURLs, cfg.Timeout)
+	})
+
+	return triggerChan, nil
+}
+
 func (b *Bot) Close() {
 	slog.Info("Conexão com Discord encerrada")
 
@@ -98,8 +117,8 @@ func (b *Bot) SendAlert(result checker.CheckResult) error {
 
 func (b *Bot) RegisterCommands() error {
 	_, err := b.session.ApplicationCommandBulkOverwrite(
-		b.session.State.User.ID, 
-		b.configs.GuildID, 
+		b.session.State.User.ID,
+		b.configs.GuildID,
 		commands,
 	)
 	if err != nil {
@@ -111,30 +130,39 @@ func (b *Bot) RegisterCommands() error {
 	return nil
 }
 
-// TODO ambas funções iguais a baixo, depois posso fazer uma com parâmetros, assim ficará melhor
-
-func (b *Bot) handleStatus(s *discordgo.Session, i *discordgo.InteractionCreate, checkFn CheckerFunc) {
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Embeds:     createStatusSummaryEmbed(checkFn()),
-			Components: []discordgo.MessageComponent{createRecheckButton()},
+func (b *Bot) responseWithStatus(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+	respType discordgo.InteractionResponseType,
+	checkFn CheckerFunc,
+) {
+	err := s.InteractionRespond(
+		i.Interaction,
+		&discordgo.InteractionResponse{
+			Type: respType,
+			Data: &discordgo.InteractionResponseData{
+				Embeds:     createStatusSummaryEmbed(checkFn()),
+				Components: []discordgo.MessageComponent{createRecheckButton()},
+			},
 		},
-	})
+	)
 	if err != nil {
-		slog.Error("Erro ao responder comando /status", "error", err)
+		slog.Error("Erro ao responder interação do Discord", "error", err)
 	}
 }
 
+func (b *Bot) handleStatus(s *discordgo.Session, i *discordgo.InteractionCreate, checkFn CheckerFunc) {
+	b.responseWithStatus(
+		s, i,
+		discordgo.InteractionResponseChannelMessageWithSource,
+		checkFn,
+	)
+}
+
 func (b *Bot) handleRecheckButton(s *discordgo.Session, i *discordgo.InteractionCreate, checkFn CheckerFunc) {
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseUpdateMessage,
-		Data: &discordgo.InteractionResponseData{
-			Embeds:     createStatusSummaryEmbed(checkFn()),
-			Components: []discordgo.MessageComponent{createRecheckButton()},
-		},
-	})
-	if err != nil {
-		slog.Error("Erro ao atualizar mensagem pelo botão", "error", err)
-	}
+	b.responseWithStatus(
+		s, i,
+		discordgo.InteractionResponseUpdateMessage,
+		checkFn,
+	)
 }
