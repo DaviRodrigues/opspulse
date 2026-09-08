@@ -99,13 +99,16 @@ func CheckAll(ctx context.Context, urls []string, timeout time.Duration) []Check
 	return results
 }
 
-func StartMonitoring(ctx context.Context, ntf Notifier, triggerChan <-chan struct{}, cfg config.MonitorConfig) {
+func StartMonitoring(
+	ctx context.Context, 
+	ntf Notifier, 
+	triggerChan <-chan struct{}, 
+	cfg config.MonitorConfig,
+) {
 	ticker := time.NewTicker(cfg.Interval)
 	defer ticker.Stop()
 
-	results := CheckAll(ctx, cfg.TargetURLs, cfg.Timeout)
-	printResults(results)
-	notifierProcess(ntf, results)
+	processMonitor(ctx, ntf, cfg)
 
 	for {
 		select {
@@ -113,14 +116,18 @@ func StartMonitoring(ctx context.Context, ntf Notifier, triggerChan <-chan struc
 			slog.Info("🛑 Encerrando monitoramento de forma segura")
 			return
 		case <-ticker.C:
-			results := CheckAll(ctx, cfg.TargetURLs, cfg.Timeout)
-			printResults(results)
-			notifierProcess(ntf, results)
+			processMonitor(ctx, ntf, cfg)
 		case <-triggerChan:
 			ticker.Reset(cfg.Interval)
 			slog.Info("🔄 Intervalo de monitoramento reiniciado por comando externo")
 		}
 	}
+}
+
+func processMonitor(ctx context.Context, ntf Notifier, cfg config.MonitorConfig) {
+	results := CheckAll(ctx, cfg.TargetURLs, cfg.Timeout)
+	printResults(results)
+	notifierProcess(ntf, results)
 }
 
 func notifierProcess(ntf Notifier, results []CheckResult) {
@@ -146,14 +153,14 @@ func printResults(results []CheckResult) {
 	for _, res := range results {
 		if res.IsUp {
 			slog.Info("Serviço operacional",
-				"status", "UP",
+				"status", "🟢 UP",
 				"url", res.URL,
 				"code", res.StatusCode,
 				"latency", res.Latency.String(),
 			)
 		} else {
 			slog.Warn("Serviço com problemas",
-				"status", "DOWN",
+				"status", "🔴 DOWN",
 				"url", res.URL,
 				"code", res.StatusCode,
 				"latency", res.Latency.String(),
