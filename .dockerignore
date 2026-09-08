@@ -1,0 +1,6 @@
+.git/
+docs/
+terraform/
+.github/
+log/
+README.md
