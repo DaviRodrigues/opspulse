@@ -13,10 +13,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-/*
-TODO implementar comandos depois e comandos por interface do discord
-*/
-
 type Bot struct {
 	session *discordgo.Session
 	configs *config.DiscordConfig
@@ -84,7 +80,7 @@ func (b *Bot) Setup(ctx context.Context, cfg config.MonitorConfig) (chan struct{
 		case triggerChan <- struct{}{}:
 		default:
 		}
-		return checker.CheckAll(ctx, cfg.TargetURLs, cfg.Timeout)
+		return checker.CheckAll(ctx, cfg.TargetURLs)
 	})
 
 	return triggerChan, nil
