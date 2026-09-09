@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func TestLoadOk(t *testing.T) {
+func TestEnvLoadOk(t *testing.T) {
 	t.Setenv("DISCORD_TOKEN", "meu-token-secreto")
 	t.Setenv("DISCORD_CHANNEL_ID", "123456789")
 	t.Setenv("DISCORD_GUILD_ID", "123456789")
@@ -13,7 +13,7 @@ func TestLoadOk(t *testing.T) {
 	t.Setenv("CHECK_INTERVAL", "15s")
 	t.Setenv("CHECK_TIMEOUT", "5s")
 
-	cfg, err := Load()
+	cfg, err := Load(&EnvTargetLoader{})
 	if err != nil {
 		t.Fatalf("não esperava erro, mas recebeu: %v", err)
 	}
@@ -31,12 +31,12 @@ func TestLoadOk(t *testing.T) {
 	}
 }
 
-func TestLoadErr(t *testing.T) {
+func TestEnvLoadErr(t *testing.T) {
 	t.Setenv("DISCORD_TOKEN", "")
 	t.Setenv("CHECK_INTERVAL", "tempo_invalido_123")
 	t.Setenv("TARGET_URLS", "")
 
-	_, err := Load()
+	_, err := Load(&EnvTargetLoader{})
 	if err == nil {
 		t.Errorf("esperava que Load() retornasse erro de validação, mas retornou nil")
 	}

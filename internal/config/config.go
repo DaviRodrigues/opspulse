@@ -22,18 +22,6 @@ type Config struct {
 	Monitor MonitorConfig
 }
 
-type DiscordConfig struct {
-	Token     string
-	ChannelID string
-	GuildID   string
-}
-type MonitorConfig struct {
-	Interval       time.Duration
-	Timeout        time.Duration
-	TargetURLs     []string
-	AlertThreshold int
-}
-
 func LoadVariable(envVariable string, fallback string) (string, error) {
 	value, exists := os.LookupEnv(envVariable)
 	if !exists {
@@ -74,7 +62,7 @@ func loadListEnv(envVariable string) ([]string, error) {
 func loadDurationEnv(envVariable string) (time.Duration, error) {
 	value, err := LoadVariable(
 		envVariable,
-		(30*time.Second).String(),
+		(30 * time.Second).String(),
 	)
 	if err != nil {
 		return 0, err
@@ -87,60 +75,27 @@ func loadDurationEnv(envVariable string) (time.Duration, error) {
 	return interval, nil
 }
 
-func Load(filenames ...string) (Config, error) {
+// TODO: vou ter que fazer uma abstract factory ou factory aqui depois, devido aos tipos de loader
+func Load(targetLoader TargetLoader, filenames ...string) (Config, error) {
 	_ = godotenv.Load(filenames...)
 
-	var errs []error
-
-	token, err := LoadVariable(
-		"DISCORD_TOKEN",
-		"",
-	)
-	if err != nil {
-		errs = append(errs, err)
+	var err_s []error
+	monitorConfig, errMonitor := loadMonitorConfig(targetLoader)
+	if errMonitor != nil {
+		err_s = append(err_s, errMonitor)
 	}
 
-	channelID, err := LoadVariable("DISCORD_CHANNEL_ID","",
-	)
-	if err != nil {
-		errs = append(errs, err)
+	discordConfig, errDiscord := loadDiscordConfig()
+	if errDiscord != nil {
+		err_s = append(err_s, errDiscord)
 	}
 
-	checkInterval, err := loadDurationEnv("CHECK_INTERVAL")
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	checkTimeout, err := loadDurationEnv("CHECK_TIMEOUT")
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	targetUrls, err := loadListEnv("TARGET_URLS")
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	guildID, err := LoadVariable("DISCORD_GUILD_ID", "")
-	if err != nil {
-		errs = append(errs, err)
-	}
-
-	if len(errs) > 0 {
-		return Config{}, errors.Join(errs...)
+	if len(err_s) > 0 {
+		return Config{}, errors.Join(err_s...)
 	}
 
 	return Config{
-		DiscordConfig{
-			Token:     token,
-			ChannelID: channelID,
-			GuildID:   guildID,
-		},
-		MonitorConfig{
-			Interval:       checkInterval,
-			Timeout:        checkTimeout,
-			TargetURLs:     targetUrls,
-			AlertThreshold: 0,
-		},
+		Monitor: monitorConfig,
+		Discord: discordConfig,
 	}, nil
 }
