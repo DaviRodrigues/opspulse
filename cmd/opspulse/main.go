@@ -29,7 +29,7 @@ func main() {
 	ctx, stop := context.CreateNotifyContext()
 	defer stop()
 
-	cfg, err := config.Load()
+	cfg, err := config.Load(&config.EnvTargetLoader{})
 	if err != nil {
 		slog.Error("Falha crítica ao carregar configurações", "error", err)
 		os.Exit(1)
