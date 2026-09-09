@@ -20,51 +20,62 @@ Fazer uma forma de ter um checker pra UP constante ou de tempos em tempos altos,
 */
 
 type CheckResult struct {
-	URL string
+	URL        string
 	StatusCode int
-	Latency time.Duration
-	IsUp bool
-	Error error
+	Latency    time.Duration
+	IsUp       bool
+	Error      error
 }
+
+// TODO: guardar para mais tarde no padrão strategy
+type HTTPChecker struct {}
+type TCPChecker struct {}
+type SSLChecker struct {}
 
 type Notifier interface {
 	SendAlert(result CheckResult) error
 }
 
-func checkURL(ctx context.Context, url string, timeout time.Duration) CheckResult {
-	reqCtx, cancel := context.WithTimeout(ctx, timeout)
+type ServiceChecker interface {
+	Check(ctx context.Context, t config.Target)
+}
+
+func checkURL(ctx context.Context, target config.Target) CheckResult {
+	reqCtx, cancel := context.WithTimeout(ctx, target.Timeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(
+		reqCtx,
+		http.MethodGet,
+		target.URL,
+		nil,
+	)
 	if err != nil {
 		return CheckResult{
 			IsUp:       false,
 			Error:      fmt.Errorf("%w (more info: %w)", errs.ErrServiceDown, err),
 			Latency:    0,
-			URL:        url,
+			URL:        target.URL,
 			StatusCode: 0,
 		}
 	}
 
 	start := time.Now()
-	client := &http.Client{
-		Timeout: timeout,
-	}
-
+	client := &http.Client{Timeout: target.Timeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return CheckResult{
 			IsUp:       false,
 			Error:      fmt.Errorf("%w (more info: %w)", errs.ErrServiceDown, err),
 			Latency:    time.Since(start),
-			URL:        url,
+			URL:        target.URL,
 			StatusCode: 0,
 		}
 	}
 	defer resp.Body.Close()
 
 	return CheckResult{
-		URL:        url,
+		URL:        target.URL,
 		IsUp:       resp.StatusCode >= 200 && resp.StatusCode < 400,
 		StatusCode: resp.StatusCode,
 		Latency:    time.Since(start),
@@ -72,23 +83,22 @@ func checkURL(ctx context.Context, url string, timeout time.Duration) CheckResul
 	}
 }
 
-func CheckAll(ctx context.Context, urls []string, timeout time.Duration) []CheckResult {
+func CheckAll(ctx context.Context, targets []config.Target) []CheckResult {
 	var wg sync.WaitGroup
+	resultsChan := make(chan CheckResult, len(targets))
 
-	resultsChan := make(chan CheckResult, len(urls))
-
-	for _, url := range urls {
+	for _, target := range targets {
 		wg.Add(1)
 
-		go func(u string) {
+		go func(t config.Target) {
 			defer wg.Done()
-			// time.Sleep(100 * time.Millisecond)
-			resultsChan <- checkURL(ctx, u, timeout)
-		}(url)
+			if t.Enabled {
+				resultsChan <- checkURL(ctx, t)
+			}
+		}(target)
 	}
 
 	wg.Wait()
-
 	close(resultsChan)
 
 	var results []CheckResult
@@ -100,9 +110,9 @@ func CheckAll(ctx context.Context, urls []string, timeout time.Duration) []Check
 }
 
 func StartMonitoring(
-	ctx context.Context, 
-	ntf Notifier, 
-	triggerChan <-chan struct{}, 
+	ctx context.Context,
+	ntf Notifier,
+	triggerChan <-chan struct{},
 	cfg config.MonitorConfig,
 ) {
 	ticker := time.NewTicker(cfg.Interval)
@@ -125,7 +135,7 @@ func StartMonitoring(
 }
 
 func processMonitor(ctx context.Context, ntf Notifier, cfg config.MonitorConfig) {
-	results := CheckAll(ctx, cfg.TargetURLs, cfg.Timeout)
+	results := CheckAll(ctx, cfg.TargetURLs)
 	printResults(results)
 	notifierProcess(ntf, results)
 }

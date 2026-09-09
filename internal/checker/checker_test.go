@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DaviRodrigues/opspulse/internal/config"
 	"github.com/DaviRodrigues/opspulse/internal/context"
 )
 
@@ -52,7 +53,14 @@ func TestCheckURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := checkURL(context.CreateContext(), tt.url, 2*time.Second)
+			result := checkURL(
+				context.CreateContext(),
+				config.Target{
+					Name:    tt.name,
+					URL:     tt.url,
+					Enabled: true,
+					Timeout: 2 * time.Second,
+				})
 
 			if result.IsUp != tt.expectedUp {
 				t.Errorf("esperava-se IsUp=%v, mas recebeu %v",
@@ -81,11 +89,17 @@ func TestCheckAll(t *testing.T) {
 	}))
 	defer server3.Close()
 
-	urls := []string{server1.URL, server2.URL, server3.URL}
+	timeout := 5 * time.Second
+	enabled := true
+	targets := []config.Target{
+		{URL: server1.URL, Enabled: enabled, Timeout: timeout},
+		{URL: server2.URL, Enabled: enabled, Timeout: timeout},
+		{URL: server3.URL, Enabled: enabled, Timeout: timeout},
+	}
 
-	results := CheckAll(context.CreateContext(), urls, 5*time.Second)
-	if len(results) != len(urls) {
-		t.Fatalf("esperava %d resultados, mas recebeu %d", len(urls), len(results))
+	results := CheckAll(context.CreateContext(), targets)
+	if len(results) != len(targets) {
+		t.Fatalf("esperava %d resultados, mas recebeu %d", len(targets), len(results))
 	}
 
 	resultsMap := make(map[string]CheckResult)
