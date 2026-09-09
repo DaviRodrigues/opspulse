@@ -1,0 +1,14 @@
+targets:
+  - name: ""
+    url: ""
+    enabled: ""
+    method: GET
+    expected_status:
+      - 200
+      - 201
+      - 204
+    timeout: 5s
+    headers: {}
+    body: {}
+    tags: []
+    expected_body_match: ""
