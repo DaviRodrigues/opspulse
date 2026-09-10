@@ -21,6 +21,7 @@ Fazer uma forma de ter um checker pra UP constante ou de tempos em tempos altos,
 */
 
 type CheckResult struct {
+	Name       string
 	URL        string
 	StatusCode int
 	Latency    time.Duration
@@ -29,9 +30,9 @@ type CheckResult struct {
 }
 
 // TODO: guardar para mais tarde no padrão strategy
-type HTTPChecker struct {}
-type TCPChecker struct {}
-type SSLChecker struct {}
+type HTTPChecker struct{}
+type TCPChecker struct{}
+type SSLChecker struct{}
 
 type Notifier interface {
 	SendAlert(result CheckResult) error
@@ -53,6 +54,7 @@ func checkURL(ctx context.Context, target file.Target) CheckResult {
 	)
 	if err != nil {
 		return CheckResult{
+			Name:       target.Name,
 			IsUp:       false,
 			Error:      fmt.Errorf("%w (more info: %w)", errs.ErrServiceDown, err),
 			Latency:    0,
@@ -66,6 +68,7 @@ func checkURL(ctx context.Context, target file.Target) CheckResult {
 	resp, err := client.Do(req)
 	if err != nil {
 		return CheckResult{
+			Name:       target.Name,
 			IsUp:       false,
 			Error:      fmt.Errorf("%w (more info: %w)", errs.ErrServiceDown, err),
 			Latency:    time.Since(start),
@@ -76,6 +79,7 @@ func checkURL(ctx context.Context, target file.Target) CheckResult {
 	defer resp.Body.Close()
 
 	return CheckResult{
+		Name:       target.Name,
 		URL:        target.URL,
 		IsUp:       resp.StatusCode >= 200 && resp.StatusCode < 400,
 		StatusCode: resp.StatusCode,
@@ -165,6 +169,7 @@ func printResults(results []CheckResult) {
 		if res.IsUp {
 			slog.Info("Serviço operacional",
 				"status", "🟢 UP",
+				"name", res.Name,
 				"url", res.URL,
 				"code", res.StatusCode,
 				"latency", res.Latency.String(),
@@ -172,6 +177,7 @@ func printResults(results []CheckResult) {
 		} else {
 			slog.Warn("Serviço com problemas",
 				"status", "🔴 DOWN",
+				"name", res.Name,
 				"url", res.URL,
 				"code", res.StatusCode,
 				"latency", res.Latency.String(),
