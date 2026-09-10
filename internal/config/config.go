@@ -7,11 +7,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-/*
-TODO: fazer uma alteração para formas diferentes de carregas as urls
-seja por arquivo, por env, por api, etc
-*/
-
 type Config struct {
 	Discord DiscordConfig
 	Monitor MonitorConfig
