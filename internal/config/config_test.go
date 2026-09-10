@@ -3,17 +3,25 @@ package config
 import (
 	"testing"
 	"time"
+
+	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
 func TestEnvLoadOk(t *testing.T) {
+	tmpDir := t.TempDir()
+	jsonLoader := &file.JSONFile{
+		FileDefault: file.FileDefault{
+			Name: "targets.json",
+			Path: tmpDir,
+		},
+	}
+
 	t.Setenv("DISCORD_TOKEN", "meu-token-secreto")
 	t.Setenv("DISCORD_CHANNEL_ID", "123456789")
 	t.Setenv("DISCORD_GUILD_ID", "123456789")
-	t.Setenv("TARGET_URLS", "https://google.com, https://github.com")
 	t.Setenv("CHECK_INTERVAL", "15s")
-	t.Setenv("CHECK_TIMEOUT", "5s")
 
-	cfg, err := Load(&EnvTargetLoader{})
+	cfg, err := Load(jsonLoader)
 	if err != nil {
 		t.Fatalf("não esperava erro, mas recebeu: %v", err)
 	}
@@ -32,11 +40,17 @@ func TestEnvLoadOk(t *testing.T) {
 }
 
 func TestEnvLoadErr(t *testing.T) {
-	t.Setenv("DISCORD_TOKEN", "")
-	t.Setenv("CHECK_INTERVAL", "tempo_invalido_123")
-	t.Setenv("TARGET_URLS", "")
+	tmpDir := t.TempDir()
+	jsonLoader := &file.JSONFile{
+		FileDefault: file.FileDefault{
+			Name: "targets.json",
+			Path: tmpDir,
+		},
+	}
 
-	_, err := Load(&EnvTargetLoader{})
+	t.Setenv("DISCORD_TOKEN", "")
+
+	_, err := Load(jsonLoader)
 	if err == nil {
 		t.Errorf("esperava que Load() retornasse erro de validação, mas retornou nil")
 	}

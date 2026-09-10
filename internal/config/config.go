@@ -2,13 +2,8 @@ package config
 
 import (
 	"errors"
-	"fmt"
-	"log/slog"
-	"os"
-	"strings"
-	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/errs"
+	"github.com/DaviRodrigues/opspulse/internal/file"
 	"github.com/joho/godotenv"
 )
 
@@ -22,72 +17,24 @@ type Config struct {
 	Monitor MonitorConfig
 }
 
-func LoadVariable(envVariable string, fallback string) (string, error) {
-	value, exists := os.LookupEnv(envVariable)
-	if !exists {
-		slog.Error("Variável não existe no .env",
-			"variable", envVariable,
-		)
-		return "", errs.ErrConfigNotFound
-	}
-
-	if strings.TrimSpace(value) == "" {
-		return fallback, nil
-	}
-	return value, nil
-}
-
-func loadListEnv(envVariable string) ([]string, error) {
-	value, err := LoadVariable(
-		envVariable,
-		"https://github.com/, https://www.google.com/",
-	)
-	if err != nil {
-		return make([]string, 0), err
-	}
-
-	rawUrls := strings.Split(value, ",")
-
-	var cleanUrls []string
-	for _, u := range rawUrls {
-		trimmed := strings.TrimSpace(u)
-		if trimmed != "" {
-			cleanUrls = append(cleanUrls, trimmed)
-		}
-	}
-
-	return cleanUrls, nil
-}
-
-func loadDurationEnv(envVariable string) (time.Duration, error) {
-	value, err := LoadVariable(
-		envVariable,
-		(30 * time.Second).String(),
-	)
-	if err != nil {
-		return 0, err
-	}
-
-	interval, err := time.ParseDuration(value)
-	if err != nil {
-		return 0, fmt.Errorf("%w: %v", errs.ErrInvalidInterval, value)
-	}
-	return interval, nil
-}
-
-// TODO: vou ter que fazer uma abstract factory ou factory aqui depois, devido aos tipos de loader
-func Load(targetLoader TargetLoader, filenames ...string) (Config, error) {
+func Load(targetLoader file.TargetLoader, filenames ...string) (Config, error) {
 	_ = godotenv.Load(filenames...)
+	envManager := file.EnvFile{}
 
 	var err_s []error
-	monitorConfig, errMonitor := loadMonitorConfig(targetLoader)
-	if errMonitor != nil {
-		err_s = append(err_s, errMonitor)
+	checkInterval, err := envManager.LoadDurationEnv("CHECK_INTERVAL")
+	if err != nil {
+		err_s = append(err_s, err)
 	}
 
-	discordConfig, errDiscord := loadDiscordConfig()
+	discordConfig, errDiscord := loadDiscordConfig(envManager)
 	if errDiscord != nil {
 		err_s = append(err_s, errDiscord)
+	}
+
+	monitorConfig, errMonitor := loadMonitorConfig(targetLoader, checkInterval)
+	if errMonitor != nil {
+		err_s = append(err_s, errMonitor)
 	}
 
 	if len(err_s) > 0 {
