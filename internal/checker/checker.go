@@ -10,6 +10,7 @@ import (
 
 	"github.com/DaviRodrigues/opspulse/internal/config"
 	"github.com/DaviRodrigues/opspulse/internal/errs"
+	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
 /*
@@ -37,10 +38,10 @@ type Notifier interface {
 }
 
 type ServiceChecker interface {
-	Check(ctx context.Context, t config.Target)
+	Check(ctx context.Context, t file.Target)
 }
 
-func checkURL(ctx context.Context, target config.Target) CheckResult {
+func checkURL(ctx context.Context, target file.Target) CheckResult {
 	reqCtx, cancel := context.WithTimeout(ctx, target.Timeout)
 	defer cancel()
 
@@ -83,14 +84,14 @@ func checkURL(ctx context.Context, target config.Target) CheckResult {
 	}
 }
 
-func CheckAll(ctx context.Context, targets []config.Target) []CheckResult {
+func CheckAll(ctx context.Context, targets []file.Target) []CheckResult {
 	var wg sync.WaitGroup
 	resultsChan := make(chan CheckResult, len(targets))
 
 	for _, target := range targets {
 		wg.Add(1)
 
-		go func(t config.Target) {
+		go func(t file.Target) {
 			defer wg.Done()
 			if t.Enabled {
 				resultsChan <- checkURL(ctx, t)
