@@ -15,7 +15,22 @@ import (
 // TODO preciso depois testar a integração disso de forma manual (remova o .env.test NÃO ESQUECER)
 
 func main() {
-	handler, err := logger.HandlerDefaultText(slog.LevelInfo, "./log")
+	ctx, stop := context.CreateNotifyContext()
+	defer stop()
+
+	// TODO depois vou precisar perguntar ao usuário qual arquivo ele quer carregar antes de continuar
+	cfg, err := config.Load(&file.JSONFile{
+		FileDefault: file.FileDefault{
+			Name: "target.json",
+			Path: "./target",
+		},
+	})
+	if err != nil {
+		slog.Error("Falha crítica ao carregar configurações", "error", err)
+		os.Exit(1)
+	}
+
+	handler, err := logger.HandlerDefaultText(slog.LevelDebug, "./log")
 	if err != nil {
 		slog.Error("Não foi possível carregar o handler do log", "error", err)
 		os.Exit(1)
@@ -24,21 +39,6 @@ func main() {
 	err = logger.SetupSlog(handler)
 	if err != nil {
 		slog.Error("Não foi possível iniciar o log", "error", err)
-		os.Exit(1)
-	}
-
-	ctx, stop := context.CreateNotifyContext()
-	defer stop()
-
-	// TODO depois vou precisar perguntar ao usuário qual arquivo ele quer carregar antes de continuar
-	cfg, err := config.Load(&file.YAMLFile{
-		FileDefault: file.FileDefault{
-			Name: "target.yaml",
-			Path: "./",
-		},
-	})
-	if err != nil {
-		slog.Error("Falha crítica ao carregar configurações", "error", err)
 		os.Exit(1)
 	}
 
