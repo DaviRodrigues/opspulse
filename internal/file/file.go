@@ -1,41 +1,24 @@
 package file
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
-
-	"github.com/DaviRodrigues/opspulse/internal/config"
+	"path/filepath"
 )
 
-type FileManager struct {
+type FileDefault struct {
 	Name string
 	Path string
 }
 
-func (f *FileManager) exists() bool {
-	_, err := os.Stat(f.Name)
-	if err == nil {
-		return true
+func (f *FileDefault) FullPath() string {
+	if f.Path == "" {
+		return f.Name
 	}
-	if errors.Is(err, os.ErrNotExist) {
-		return false
-	}
-
-	return false
+	return filepath.Join(f.Path, f.Name)
 }
 
-func (f *FileManager) create() {
-	if f.exists() {
-		return
-	}
-
-	file, err := os.Create(f.Name)
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	err = encoder.Encode(config.Target{})
-	if err != nil {
-		return
-	}
+func (f *FileDefault) FileExists() bool {
+	_, err := os.Stat(f.FullPath())
+	return err == nil || !errors.Is(err, os.ErrNotExist)
 }
