@@ -38,6 +38,11 @@ func createEmbed(result checker.CheckResult) *discordgo.MessageEmbed {
 		Timestamp:   time.Now().Format(time.RFC3339),
 		Fields: []*discordgo.MessageEmbedField{
 			{
+				Name: "Nome do Sistema",
+				Value: result.Name,
+				Inline: true,
+			},
+			{
 				Name:   "Status HTTP",
 				Value:  statusText,
 				Inline: true,

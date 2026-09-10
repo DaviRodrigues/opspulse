@@ -9,7 +9,6 @@ import (
 )
 
 func TestCreateEmbed_ColorsAndStatus(t *testing.T) {
-	// 1. Testa serviço UP (Verde)
 	upResult := checker.CheckResult{
 		URL:        "https://api.exemplo.com",
 		IsUp:       true,
@@ -21,7 +20,6 @@ func TestCreateEmbed_ColorsAndStatus(t *testing.T) {
 		t.Errorf("esperava cor verde 0x2ECC71 para UP, recebeu: %x", embedUp.Color)
 	}
 
-	// 2. Testa serviço DOWN (Vermelho)
 	downResult := checker.CheckResult{
 		URL:        "https://api.exemplo.com/erro",
 		IsUp:       false,
