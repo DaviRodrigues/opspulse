@@ -1,6 +1,10 @@
 package config
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/DaviRodrigues/opspulse/internal/file"
+)
 
 type DiscordConfig struct {
 	Token     string
@@ -8,10 +12,10 @@ type DiscordConfig struct {
 	GuildID   string
 }
 
-func loadDiscordConfig() (DiscordConfig, error) {
+func loadDiscordConfig(envManager file.EnvFile) (DiscordConfig, error) {
 	var err_s []error
 
-	token, err := LoadVariable(
+	token, err := envManager.LoadVariable(
 		"DISCORD_TOKEN",
 		"",
 	)
@@ -19,12 +23,12 @@ func loadDiscordConfig() (DiscordConfig, error) {
 		err_s = append(err_s, err)
 	}
 
-	channelID, err := LoadVariable("DISCORD_CHANNEL_ID", "")
+	channelID, err := envManager.LoadVariable("DISCORD_CHANNEL_ID", "")
 	if err != nil {
 		err_s = append(err_s, err)
 	}
 
-	guildID, err := LoadVariable("DISCORD_GUILD_ID", "")
+	guildID, err := envManager.LoadVariable("DISCORD_GUILD_ID", "")
 	if err != nil {
 		err_s = append(err_s, err)
 	}

@@ -3,23 +3,20 @@ package config
 import (
 	"errors"
 	"time"
+
+	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
 type MonitorConfig struct {
 	Interval       time.Duration
-	TargetURLs     []Target
+	TargetURLs     []file.Target
 	AlertThreshold int
 }
 
-func loadMonitorConfig(targetLoader TargetLoader) (MonitorConfig, error) {
+func loadMonitorConfig(targetLoader file.TargetLoader, checkInterval time.Duration) (MonitorConfig, error) {
 	var err_s []error
 
-	checkInterval, err := loadDurationEnv("CHECK_INTERVAL")
-	if err != nil {
-		err_s = append(err_s, err)
-	}
-
-	targetUrls, err := targetLoader.LoadTargets()
+	targetUrls, err := targetLoader.Load()
 	if err != nil {
 		err_s = append(err_s, err)
 	}
