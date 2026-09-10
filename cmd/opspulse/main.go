@@ -8,6 +8,7 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/config"
 	"github.com/DaviRodrigues/opspulse/internal/context"
 	"github.com/DaviRodrigues/opspulse/internal/discord"
+	"github.com/DaviRodrigues/opspulse/internal/file"
 	"github.com/DaviRodrigues/opspulse/internal/logger"
 )
 
@@ -29,7 +30,13 @@ func main() {
 	ctx, stop := context.CreateNotifyContext()
 	defer stop()
 
-	cfg, err := config.Load(&config.EnvTargetLoader{})
+	// TODO depois vou precisar perguntar ao usuário qual arquivo ele quer carregar antes de continuar
+	cfg, err := config.Load(&file.YAMLFile{
+		FileDefault: file.FileDefault{
+			Name: "target.yaml",
+			Path: "./",
+		},
+	})
 	if err != nil {
 		slog.Error("Falha crítica ao carregar configurações", "error", err)
 		os.Exit(1)
