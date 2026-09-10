@@ -10,4 +10,5 @@ services:
     working_dir: /app
     volumes:
       - ./log:/app/log
+      - ./target:/app/target
       
