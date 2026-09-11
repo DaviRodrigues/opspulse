@@ -6,7 +6,7 @@ import (
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/config"
-	"github.com/DaviRodrigues/opspulse/internal/context"
+	"github.com/DaviRodrigues/opspulse/internal/contextG"
 	"github.com/DaviRodrigues/opspulse/internal/discord"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 	"github.com/DaviRodrigues/opspulse/internal/logger"
@@ -15,7 +15,7 @@ import (
 // TODO preciso depois testar a integração disso de forma manual (remova o .env.test NÃO ESQUECER)
 
 func main() {
-	ctx, stop := context.CreateNotifyContext()
+	ctx, stop := contextG.CreateNotifyContext()
 	defer stop()
 
 	// TODO depois vou precisar perguntar ao usuário qual arquivo ele quer carregar antes de continuar

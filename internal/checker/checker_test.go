@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/context"
+	"github.com/DaviRodrigues/opspulse/internal/contextG"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
@@ -54,7 +54,7 @@ func TestCheckURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := checkURL(
-				context.CreateContext(),
+				contextG.CreateContext(),
 				file.Target{
 					Name:    tt.name,
 					URL:     tt.url,
@@ -97,7 +97,7 @@ func TestCheckAll(t *testing.T) {
 		{URL: server3.URL, Enabled: enabled, Timeout: timeout},
 	}
 
-	results := CheckAll(context.CreateContext(), targets)
+	results := CheckAll(contextG.CreateContext(), targets)
 	if len(results) != len(targets) {
 		t.Fatalf("esperava %d resultados, mas recebeu %d", len(targets), len(results))
 	}
