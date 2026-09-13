@@ -6,7 +6,7 @@
 
 ## 📚 Documentação do Projeto
 
-- 📖 **[Plano de Projeto & Roadmap por Fases (docs/PROJECT_PLAN.md)](docs/PROJECT_PLAN.md)**: Detalhamento da arquitetura, status do MVP e pacotes de evolução pós-MVP.
+- 📖 **[Plano de Projeto &amp; Roadmap por Fases (docs/PROJECT_PLAN.md)](docs/PROJECT_PLAN.md)**: Detalhamento da arquitetura, status do MVP e pacotes de evolução pós-MVP.
 - 💡 **[Banco de Ideias de Projetos Futuros (docs/ideas/other_projects_ideas.md)](docs/ideas/other_projects_ideas.md)**: Ideias salvas para implementação futura em Go ou Python.
 
 ---
@@ -27,11 +27,11 @@
 
 ### 🎯 Fase MVP
 
-- [x] **Fase 1:** Setup do Módulo, Structs de Dados e Health Checker Básico
-- [x] **Fase 2:** Concorrência, Goroutines, Channels, Tickers e Graceful Shutdown
-- [x] **Fase 3:** Configuração com Fallbacks, Structured Logging (`slog`) e Discord Bot Interativo
-- [x] **Fase 4:** Dockerfile Multi-stage otimizado e Docker Compose com volumes
-- [x] **Fase 5:** CI/CD Pipeline no GitHub Actions (Testes, Linters e Releases de Binários)
+- [X] **Fase 1:** Setup do Módulo, Structs de Dados e Health Checker Básico
+- [X] **Fase 2:** Concorrência, Goroutines, Channels, Tickers e Graceful Shutdown
+- [X] **Fase 3:** Configuração com Fallbacks, Structured Logging (`slog`) e Discord Bot Interativo
+- [X] **Fase 4:** Dockerfile Multi-stage otimizado e Docker Compose com volumes
+- [X] **Fase 5:** CI/CD Pipeline no GitHub Actions (Testes, Linters e Releases de Binários)
 - [ ] **Fase 6:** Infraestrutura como Código (IaC) com Terraform _(Em andamento)_
 
 ---
@@ -57,9 +57,21 @@ As futuras atualizações estão estruturadas em pacotes modulares independentes
 
 ### 1. Clonar e Configurar Variáveis
 
+*Lembrete*: no opspulse/main.go você pode configurar o local e nome do .env na hora de carregar as configurações pelo parâmetro filenames.
+
 ```bash
 cp .env.example .env
-# Edite o .env com seu DISCORD_TOKEN, DISCORD_CHANNEL_ID e TARGET_URLS
+# Edite o .env com seu DISCORD_TOKEN, DISCORD_CHANNEL_ID e etc...
+```
+
+### 2. Configurar Target
+
+*Lembrete*: no opspulse/main.go você pode configurar o Target para carregar seu tipo de arquivo, pasta e nome.
+
+```bash
+target.json
+target.yaml
+# Edite um dos arquivos com base no target_example de ambos
 ```
 
 ### 2. Rodar com Go
