@@ -95,15 +95,15 @@ flowchart TD
 
 ## 🚀 Fases do MVP (Passo a Passo)
 
-- [x] **Fase 1: Setup do Módulo & Health Checker Básico**
+- [X] **Fase 1: Setup do Módulo & Health Checker Básico**
   - Módulo Go, Structs de dados tipadas (`CheckResult`), requisições HTTP seguras com `net/http` e timeouts.
-- [x] **Fase 2: Concorrência & Monitoramento Contínuo**
+- [X] **Fase 2: Concorrência & Monitoramento Contínuo**
   - Fan-out/fan-in com goroutines, channels, `sync.WaitGroup`, loop com `time.NewTicker`, canal `triggerChan` e graceful shutdown com `signal.NotifyContext`.
-- [x] **Fase 3: Integração com Discord Bot & ChatOps**
+- [X] **Fase 3: Integração com Discord Bot & ChatOps**
   - Sessão WebSocket persistente via `discordgo`, envio de Discord Embeds estilizados, registro de Slash Commands (`/status`) e Botões Interativos (🔄 "Checar Novamente").
-- [x] **Fase 4: Docker & Otimização de Imagem**
+- [X] **Fase 4: Docker & Otimização de Imagem**
   - `Dockerfile` multi-stage reduzindo imagem para < 20MB, `.dockerignore`, `compose.yml` com mapeamento de volume para `./log`.
-- [x] **Fase 5: CI/CD com GitHub Actions**
+- [X] **Fase 5: CI/CD com GitHub Actions**
   - Pipeline `.github/workflows/ci.yml` automatizando testes unitários, race detector, linters e geração de releases multi-plataforma.
 - [ ] **Fase 6: Infraestrutura como Código com Terraform** _(Em andamento)_
   - Declaração de infraestrutura em nuvem (AWS/LocalStack), Security Groups, Instância e inicialização automatizada com User Data.
@@ -116,7 +116,7 @@ As melhorias futuras serão implementadas em **pacotes de atualização independ
 
 ---
 
-### 📦 Pacote 1: Gestão Rica de Targets (JSON / YAML & Validação de Payload)
+### 📦 Pacote 1: Gestão Rica de Targets (JSON / YAML & Validação de Payload) (IMPLEMENTADO NA VERSÃO ATUAL)
 
 - **Objetivo:** Permitir configurações avançadas por endpoint sem depender apenas de strings simples no `.env`.
 - **Novas Funcionalidades:**
