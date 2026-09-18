@@ -35,6 +35,8 @@ No NoSQL não existe o conceito de `JOIN` relacional tradicional rígido. Você 
 ## 3. Estrutura do Banco de Dados
 
 * Primeiramente será necessário construir o diagrama do banco de dados;
+* Adicione o mongodb ao compose.yml é importante (é bom adicionar a senha dele no .env, mas como é de teste por enquanto ta suave);
+* Lembre-se de utilizar alguma ferramenta para visualizar o banco de dados depois de criado, extensão do vscode ou Beekeeper Studio (tem na loja do ubuntu, talvez tenha no mint também);
 * Criar um diretório dentro do internal chamado models (onde vão ficar as structs do banco);
 * Criar um diretório dentro do internal chamado storage para a conexão com o mongodb;
 * Em seguida baixar as dependências para utilizá-lo posteriormente;
@@ -77,7 +79,7 @@ Campos:
 * URL
 * Method (Pode ser enum, ou string em maiúsculo) // GET, POST, HEAD
 * ExpectedStatus (pode ser nulo)
-* Timeout 
+* Timeout
 * Headers (pode ser nulo)
 * Body (pode ser nulo)
 * Tags (pode ser nulo)
