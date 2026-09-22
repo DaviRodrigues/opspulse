@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/config"
-	"github.com/DaviRodrigues/opspulse/internal/contextG"
 	"github.com/DaviRodrigues/opspulse/internal/discord"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 	"github.com/DaviRodrigues/opspulse/internal/logger"
@@ -15,7 +17,11 @@ import (
 // TODO preciso depois testar a integração disso de forma manual (remova o .env.test NÃO ESQUECER)
 
 func main() {
-	ctx, stop := contextG.CreateNotifyContext()
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
 	defer stop()
 
 	// TODO depois vou precisar perguntar ao usuário qual arquivo ele quer carregar antes de continuar
@@ -30,13 +36,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	handler, err := logger.HandlerDefaultText(slog.LevelDebug, "./log")
+	handler, err := logger.HandlerDefaultText(slog.LevelDebug, "./log/app")
 	if err != nil {
 		slog.Error("Não foi possível carregar o handler do log", "error", err)
 		os.Exit(1)
 	}
 
-	err = logger.SetupSlog(handler)
+	_, err = logger.SetupSlog(handler)
 	if err != nil {
 		slog.Error("Não foi possível iniciar o log", "error", err)
 		os.Exit(1)
