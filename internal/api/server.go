@@ -2,15 +2,16 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/contextG"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+	slogchi "github.com/samber/slog-chi"
 )
 
 type Server struct {
@@ -19,13 +20,12 @@ type Server struct {
 	targetLoader file.TargetLoader
 }
 
-func Setup() error {
-	// TODO não esquecer do target depois
+func NewServer(loader file.TargetLoader, port string, loggerManager *slog.Logger) *Server {
 	r := chi.NewRouter()
 	server := Server{
 		router: r,
 		managerHttp: &http.Server{
-			Addr:         ":3333",
+			Addr:         ":" + port,
 			Handler:      r,
 			ReadTimeout:  time.Second * 5,
 			WriteTimeout: time.Second * 5,
@@ -33,7 +33,7 @@ func Setup() error {
 	}
 
 	// Global Built-in Middlewares
-	// TODO MELHORAR ESSA BOMBA DEPOIS TA COM MEIO MUNDO DE CONTEXTO NO SETUP MANE
+	server.router.Use(slogchi.New(loggerManager))
 	server.router.Use(middleware.RequestID)                 // Injects unique ID into request context
 	server.router.Use(middleware.RealIP)                    // Captures actual client IP
 	server.router.Use(middleware.Logger)                    // Clean, structured request logging
@@ -43,25 +43,27 @@ func Setup() error {
 	apiIsOk(server.router)
 	apiV1(server.router)
 
+	return &server
+}
 
-	// TODO mandar pra parte de contexto isso aqui, no condition filhão
+func (s *Server) Setup(ctx context.Context) error {
 	go func() {
 		slog.Info("Starting API server on :3333...")
-		if err := server.managerHttp.ListenAndServe(); err != nil {
+		if err := s.managerHttp.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("Server failed to start", "error", err)
 			os.Exit(1)
 		}
 	}()
 
-	shutdownCtx, stop := contextG.CreateNotifyContext()
-	defer stop()
-	<-shutdownCtx.Done()
+	<-ctx.Done()
 	slog.Info("Shutdown signal received, starting graceful teardown...")
 
-	timeoutCtx, cancel := contextG.CreateContextTimeout(context.Background(), 15*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(
+		context.Background(),
+		15*time.Second)
 	defer cancel()
 
-	if err := server.managerHttp.Shutdown(timeoutCtx); err != nil {
+	if err := s.managerHttp.Shutdown(timeoutCtx); err != nil {
 		slog.Error("Server forced to shutdown", "error", err)
 		return err
 	}
