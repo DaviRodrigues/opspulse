@@ -1,12 +1,12 @@
 package checker
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/contextG"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
@@ -54,7 +54,7 @@ func TestCheckURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := checkURL(
-				contextG.CreateContext(),
+				context.Background(),
 				file.Target{
 					Name:    tt.name,
 					URL:     tt.url,
@@ -97,7 +97,7 @@ func TestCheckAll(t *testing.T) {
 		{URL: server3.URL, Enabled: enabled, Timeout: timeout},
 	}
 
-	results := CheckAll(contextG.CreateContext(), targets)
+	results := CheckAll(context.Background(), targets)
 	if len(results) != len(targets) {
 		t.Fatalf("esperava %d resultados, mas recebeu %d", len(targets), len(results))
 	}
