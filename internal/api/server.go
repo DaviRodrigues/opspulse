@@ -24,6 +24,7 @@ func NewServer(loader file.TargetLoader, port string, loggerManager *slog.Logger
 	r := chi.NewRouter()
 	server := Server{
 		router: r,
+		targetLoader: loader,
 		managerHttp: &http.Server{
 			Addr:         ":" + port,
 			Handler:      r,
@@ -40,8 +41,7 @@ func NewServer(loader file.TargetLoader, port string, loggerManager *slog.Logger
 	server.router.Use(middleware.Recoverer)                 // Recovers from panics without crashing server
 	server.router.Use(middleware.Timeout(60 * time.Second)) // Automatic request timeout
 
-	apiIsOk(server.router)
-	apiV1(server.router)
+	server.registerRoutes()
 
 	return &server
 }
