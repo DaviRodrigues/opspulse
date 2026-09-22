@@ -18,7 +18,7 @@ func TestSetupLogger(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	err = SetupSlog(
+	_, err = SetupSlog(
 		handler,
 	)
 	if err != nil {

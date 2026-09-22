@@ -25,10 +25,10 @@ func makePathLog(logDir string) (io.Writer, error) {
 	return io.MultiWriter(os.Stdout, file), nil
 }
 
-func SetupSlog(handler slog.Handler) error {
+func SetupSlog(handler slog.Handler) (*slog.Logger, error) {
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
-	return nil
+	return logger, nil
 }
 
 func HandlerDefaultJSON(level slog.Level, logDir string) (slog.Handler, error) {
