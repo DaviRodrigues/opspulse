@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
@@ -41,22 +42,31 @@ func NewServer(monitorConfig config.MonitorConfig, port string) *Server {
 
 func (s *Server) SetConfigures(loggerManager *slog.Logger) {
 	s.router.Use(slogchi.New(loggerManager))
-	s.router.Use(middleware.RequestID)                 // Injects unique ID into request context
-	s.router.Use(middleware.RealIP)                    // Captures actual client IP
-	s.router.Use(middleware.Logger)                    // Clean, structured request logging
-	s.router.Use(middleware.Recoverer)                 // Recovers from panics without crashing server
-	s.router.Use(middleware.Timeout(60 * time.Second)) // Automatic request timeout
+	s.router.Use(middleware.RequestID) // Injects unique ID into request context
+	s.router.Use(middleware.RealIP)    // Captures actual client IP
+	s.router.Use(middleware.Logger)    // Clean, structured request logging
+	s.router.Use(middleware.Recoverer) // Recovers from panics without crashing server
 
 	s.registerRoutes()
 }
 
-func (s *Server) Setup(ctx context.Context) error {
+func (s *Server) Setup(ctx context.Context, monitorCfg config.MonitorConfig) error {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		slog.Info("Starting API server on :3333...")
 		if err := s.managerHttp.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("Server failed to start", "error", err)
 			os.Exit(1)
 		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s.StartMonitoring(ctx, monitorCfg)
 	}()
 
 	<-ctx.Done()
@@ -67,7 +77,9 @@ func (s *Server) Setup(ctx context.Context) error {
 		15*time.Second)
 	defer cancel()
 
-	if err := s.managerHttp.Shutdown(timeoutCtx); err != nil {
+	err := s.managerHttp.Shutdown(timeoutCtx)
+	wg.Wait()
+	if err != nil {
 		slog.Error("Server forced to shutdown", "error", err)
 		return err
 	}
@@ -78,7 +90,7 @@ func (s *Server) Setup(ctx context.Context) error {
 }
 
 func (s *Server) StartMonitoring(ctx context.Context, cfg config.MonitorConfig) {
-	ticker := time.NewTicker(time.Second*30)
+	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
 
 	event := NewStatusEvent(checker.CheckAll(ctx, cfg.TargetURLs))
