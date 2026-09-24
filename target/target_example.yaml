@@ -1,6 +1,6 @@
 - name: ""
   url: ""
-  enabled: ""
+  enabled: true
   method: GET
   expected_status:
     - 200
