@@ -30,7 +30,7 @@ func main() {
 			Name: "target.json",
 			Path: "./target",
 		},
-	})
+	}, file.NewEnvFile())
 	if err != nil {
 		slog.Error("Falha crítica ao carregar configurações", "error", err)
 		os.Exit(1)
