@@ -31,7 +31,7 @@ func NewServer(monitorConfig config.MonitorConfig, port string) *Server {
 			Addr:         ":" + port,
 			Handler:      r,
 			ReadTimeout:  time.Second * 5,
-			WriteTimeout: time.Second * 5,
+			WriteTimeout: 0,
 		},
 		broker: NewCheckBroker(),
 	}
@@ -80,6 +80,9 @@ func (s *Server) Setup(ctx context.Context) error {
 func (s *Server) StartMonitoring(ctx context.Context, cfg config.MonitorConfig) {
 	ticker := time.NewTicker(time.Second*30)
 	defer ticker.Stop()
+
+	event := NewStatusEvent(checker.CheckAll(ctx, cfg.TargetURLs))
+	s.broker.Publish(event)
 
 	for {
 		select {
