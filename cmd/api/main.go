@@ -49,9 +49,10 @@ func main() {
 	/*
 		TODO: validar se vou carregar configurações do env e usar aqui depois
 	*/
+	go server.StartMonitoring(ctx, monitorCfg)
 	if err = server.Setup(ctx); err != nil {
 		slog.Error("Falha na execução do servidor", "error", err)
 		os.Exit(1)
 	}
-	server.StartMonitoring(ctx, monitorCfg)
+
 }
