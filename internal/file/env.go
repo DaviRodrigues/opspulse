@@ -8,10 +8,16 @@ import (
 	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/errs"
+	"github.com/joho/godotenv"
 )
 
 // TODO por agora o FileDefault não é necessário
 type EnvFile struct {}
+
+func NewEnvFile(filenames ...string) EnvFile {
+	_ = godotenv.Load(filenames...)
+	return EnvFile{}
+}
 
 func (e *EnvFile) LoadVariable(envVariable string, fallback string) (string, error) {
 	value, exists := os.LookupEnv(envVariable)

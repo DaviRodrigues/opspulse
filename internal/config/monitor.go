@@ -13,8 +13,13 @@ type MonitorConfig struct {
 	AlertThreshold int
 }
 
-func loadMonitorConfig(targetLoader file.TargetLoader, checkInterval time.Duration) (MonitorConfig, error) {
+func LoadMonitorConfig(targetLoader file.TargetLoader, envManager file.EnvFile) (MonitorConfig, error) {
 	var err_s []error
+
+	checkInterval, err := envManager.LoadDurationEnv("CHECK_INTERVAL")
+	if err != nil {
+		err_s = append(err_s, err)
+	}
 
 	targetUrls, err := targetLoader.Load()
 	if err != nil {

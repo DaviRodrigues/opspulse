@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/DaviRodrigues/opspulse/internal/file"
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -12,22 +11,15 @@ type Config struct {
 	Monitor MonitorConfig
 }
 
-func Load(targetLoader file.TargetLoader, filenames ...string) (Config, error) {
-	_ = godotenv.Load(filenames...)
-	envManager := file.EnvFile{}
-
+func Load(targetLoader file.TargetLoader, envManager file.EnvFile) (Config, error) {
 	var err_s []error
-	checkInterval, err := envManager.LoadDurationEnv("CHECK_INTERVAL")
-	if err != nil {
-		err_s = append(err_s, err)
-	}
 
-	discordConfig, errDiscord := loadDiscordConfig(envManager)
+	discordConfig, errDiscord := LoadDiscordConfig(envManager)
 	if errDiscord != nil {
 		err_s = append(err_s, errDiscord)
 	}
 
-	monitorConfig, errMonitor := loadMonitorConfig(targetLoader, checkInterval)
+	monitorConfig, errMonitor := LoadMonitorConfig(targetLoader, envManager)
 	if errMonitor != nil {
 		err_s = append(err_s, errMonitor)
 	}

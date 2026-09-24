@@ -21,7 +21,7 @@ func TestEnvLoadOk(t *testing.T) {
 	t.Setenv("DISCORD_GUILD_ID", "123456789")
 	t.Setenv("CHECK_INTERVAL", "15s")
 
-	cfg, err := Load(jsonLoader)
+	cfg, err := Load(jsonLoader, file.NewEnvFile())
 	if err != nil {
 		t.Fatalf("não esperava erro, mas recebeu: %v", err)
 	}
@@ -50,7 +50,8 @@ func TestEnvLoadErr(t *testing.T) {
 
 	t.Setenv("DISCORD_TOKEN", "")
 
-	_, err := Load(jsonLoader)
+	_, err := Load(jsonLoader, file.NewEnvFile())
+
 	if err == nil {
 		t.Errorf("esperava que Load() retornasse erro de validação, mas retornou nil")
 	}

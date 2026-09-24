@@ -12,7 +12,7 @@ type DiscordConfig struct {
 	GuildID   string
 }
 
-func loadDiscordConfig(envManager file.EnvFile) (DiscordConfig, error) {
+func LoadDiscordConfig(envManager file.EnvFile) (DiscordConfig, error) {
 	var err_s []error
 
 	token, err := envManager.LoadVariable(
