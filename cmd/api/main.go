@@ -8,14 +8,15 @@ import (
 	"syscall"
 
 	"github.com/DaviRodrigues/opspulse/internal/api"
+	"github.com/DaviRodrigues/opspulse/internal/config"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 	"github.com/DaviRodrigues/opspulse/internal/logger"
 )
 
 func main() {
 	ctx, stop := signal.NotifyContext(
-		context.Background(), 
-		os.Interrupt, 
+		context.Background(),
+		os.Interrupt,
 		syscall.SIGTERM,
 	)
 	defer stop()
@@ -32,12 +33,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	targetLoader := &file.JSONFile{
-		FileDefault: file.FileDefault{Name: "target.json", Path: "./target"},
+	monitorCfg, err := config.LoadMonitorConfig(
+		&file.JSONFile{
+			FileDefault: file.FileDefault{Name: "target.json", Path: "./target"},
+		},
+		file.NewEnvFile(),
+	)
+	if err != nil {
+		slog.Error("Falha crítica ao carregar configurações", "error", err)
+		os.Exit(1)
 	}
-	server := api.NewServer(targetLoader, "3333", loggerManager)
+
+	server := api.NewServer(monitorCfg, "3333")
+	server.SetConfigures(loggerManager)
+	/*
+		TODO: validar se vou carregar configurações do env e usar aqui depois
+	*/
 	if err = server.Setup(ctx); err != nil {
 		slog.Error("Falha na execução do servidor", "error", err)
 		os.Exit(1)
 	}
+	server.StartMonitoring(ctx, monitorCfg)
 }
