@@ -1,171 +1,279 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpsPulse — Live Health Dashboard (SSE)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.9); }
-    }
-    .live-dot {
-      animation: pulse-dot 2s infinite ease-in-out;
-    }
-  </style>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased p-6">
-  <div class="max-w-6xl mx-auto space-y-6">
-    
-    <!-- Top Header -->
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-      <div>
-        <div class="flex items-center gap-3">
-          <span class="text-3xl">📡</span>
-          <h1 class="text-2xl font-bold tracking-tight text-white">OpsPulse Dashboard</h1>
-        </div>
-        <p class="text-sm text-slate-400 mt-1">Monitoramento em Tempo Real via Server-Sent Events (SSE)</p>
-      </div>
-
-      <!-- Connection Status Badge -->
-      <div id="conn-badge" class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 border border-slate-700 text-amber-400">
-        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 live-dot"></span>
-        <span id="conn-text">Conectando ao SSE...</span>
-      </div>
-    </header>
-
-    <!-- Stat Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-        <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Total de Alvos</div>
-        <div id="stat-total" class="text-2xl font-bold text-white mt-1">0</div>
-      </div>
-      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-        <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Serviços Online</div>
-        <div id="stat-up" class="text-2xl font-bold text-emerald-400 mt-1">0</div>
-      </div>
-      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-        <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Serviços com Falha</div>
-        <div id="stat-down" class="text-2xl font-bold text-rose-400 mt-1">0</div>
-      </div>
-      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-        <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Última Atualização</div>
-        <div id="stat-last-update" class="text-sm font-mono text-slate-300 mt-2">Aguardando...</div>
-      </div>
-    </div>
-
-    <!-- Live Targets Table / Cards -->
-    <div class="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-      <div class="p-4 border-b border-slate-800 flex justify-between items-center">
-        <h2 class="text-base font-semibold text-white flex items-center gap-2">
-          <span>🎯</span> Serviços Monitorados
-        </h2>
-        <span class="text-xs text-slate-400">Atualizações automáticas em tempo real</span>
-      </div>
-      
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm text-slate-300">
-          <thead class="bg-slate-950/60 text-xs uppercase text-slate-400 border-b border-slate-800">
-            <tr>
-              <th class="px-6 py-3">Status</th>
-              <th class="px-6 py-3">Serviço / URL</th>
-              <th class="px-6 py-3">Código HTTP</th>
-              <th class="px-6 py-3">Latência</th>
-              <th class="px-6 py-3">Diagnóstico</th>
-            </tr>
-          </thead>
-          <tbody id="targets-tbody" class="divide-y divide-slate-800/60">
-            <tr>
-              <td colspan="5" class="px-6 py-8 text-center text-slate-500">
-                Aguardando primeiro evento do servidor...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Live Event Log Stream -->
-    <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-      <div class="flex justify-between items-center mb-3">
-        <h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
-          <span>📜</span> Log de Eventos SSE (Raw Stream)
-        </h3>
-        <button onclick="clearLogs()" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">Limpar logs</button>
-      </div>
-      <div id="log-stream" class="bg-slate-950 font-mono text-xs text-slate-400 p-3 rounded-lg h-36 overflow-y-auto space-y-1 border border-slate-800/80">
-        <div class="text-slate-600">[Sistema] Dashboard pronto. Abrindo conexão EventSource...</div>
-      </div>
-    </div>
-
-  </div>
-
-  <script>
-    const connBadge = document.getElementById("conn-badge");
-    const connText = document.getElementById("conn-text");
-    const targetsTbody = document.getElementById("targets-tbody");
-    const statTotal = document.getElementById("stat-total");
-    const statUp = document.getElementById("stat-up");
-    const statDown = document.getElementById("stat-down");
-    const statLastUpdate = document.getElementById("stat-last-update");
-    const logStream = document.getElementById("log-stream");
-
-    function addLog(msg, type = "info") {
-      const time = new Date().toLocaleTimeString();
-      const div = document.createElement("div");
-      let color = "text-slate-400";
-      if (type === "success") color = "text-emerald-400";
-      if (type === "error") color = "text-rose-400";
-      if (type === "warn") color = "text-amber-400";
-      
-      div.className = `${color}`;
-      div.textContent = `[${time}] ${msg}`;
-      logStream.appendChild(div);
-      logStream.scrollTop = logStream.scrollHeight;
-    }
-
-    function clearLogs() {
-      logStream.innerHTML = "";
-    }
-
-    function setConnectionStatus(status) {
-      if (status === "connected") {
-        connBadge.className = "inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold bg-emerald-950/60 border border-emerald-800 text-emerald-400";
-        connBadge.querySelector("span").className = "w-2.5 h-2.5 rounded-full bg-emerald-400 live-dot";
-        connText.textContent = "🟢 Conectado ao SSE";
-      } else if (status === "connecting") {
-        connBadge.className = "inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold bg-amber-950/60 border border-amber-800 text-amber-400";
-        connBadge.querySelector("span").className = "w-2.5 h-2.5 rounded-full bg-amber-400 live-dot";
-        connText.textContent = "🟡 Reconectando...";
-      } else {
-        connBadge.className = "inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold bg-rose-950/60 border border-rose-800 text-rose-400";
-        connBadge.querySelector("span").className = "w-2.5 h-2.5 rounded-full bg-rose-400";
-        connText.textContent = "🔴 Desconectado";
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpsPulse — Live Health Dashboard (SSE)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      @keyframes pulse-dot {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.4;
+          transform: scale(0.9);
+        }
       }
-    }
+      .live-dot {
+        animation: pulse-dot 2s infinite ease-in-out;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased p-6"
+  >
+    <div class="max-w-6xl mx-auto space-y-6">
+      <!-- Top Header -->
+      <header
+        class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800"
+      >
+        <div>
+          <div class="flex items-center gap-3">
+            <i class="size-8" data-lucide="radar"></i>
+            <h1 class="text-2xl font-bold tracking-tight text-white">
+              OpsPulse Dashboard
+            </h1>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">
+            Monitoramento em Tempo Real via Server-Sent Events (SSE)
+          </p>
+        </div>
 
-    function renderTargets(targets) {
-      if (!Array.isArray(targets) || targets.length === 0) return;
+        <div class="flex gap-2">
+          <!-- Connection Status Badge -->
+          <div
+            id="conn-badge"
+            class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 border border-slate-700 text-amber-400"
+          >
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 live-dot"></span>
+            <span id="conn-text">Conectando ao SSE...</span>
+          </div>
 
-      statTotal.textContent = targets.length;
-      const upCount = targets.filter(t => t.IsUp).length;
-      const downCount = targets.length - upCount;
-      statUp.textContent = upCount;
-      statDown.textContent = downCount;
-      statLastUpdate.textContent = new Date().toLocaleTimeString();
+          <div
+            id="conn-badge"
+            class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 border border-slate-700 text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            <i class="size-5" data-lucide="refresh-cw"></i>
+            <button id="refresh-button" onclick="restartConnection()">
+              Recarregar Monitor
+            </button>
+          </div>
 
-      targetsTbody.innerHTML = targets.map(t => {
-        const isUp = t.IsUp;
-        const statusBadge = isUp 
-          ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-900/40 text-emerald-400 border border-emerald-800/60">🟢 UP</span>`
-          : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-900/40 text-rose-400 border border-rose-800/60">🔴 DOWN</span>`;
-        
-        const codeText = t.StatusCode > 0 ? t.StatusCode : "N/A";
-        const latencyText = t.Latency ? (typeof t.Latency === "number" ? (t.Latency / 1000000).toFixed(2) + "ms" : t.Latency) : "--";
-        const errorText = t.Error ? `<span class="text-rose-400 font-mono text-xs">${t.Error}</span>` : `<span class="text-slate-500">Operacional</span>`;
+          <div
+            id="conn-badge"
+            class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold bg-slate-900 border border-slate-700 text-red-400 hover:text-red-300 transition-colors"
+          >
+            <i class="size-5" data-lucide="ban"></i>
+            <button id="stop-button" onclick="stopConnection()">
+              Parar Monitor
+            </button>
+          </div>
+        </div>
+      </header>
 
-        return `
+      <!-- Stat Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+          <div
+            class="text-xs text-slate-400 font-medium uppercase tracking-wider"
+          >
+            Total de Alvos
+          </div>
+          <div id="stat-total" class="text-2xl font-bold text-white mt-1">
+            0
+          </div>
+        </div>
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+          <div
+            class="text-xs text-slate-400 font-medium uppercase tracking-wider"
+          >
+            Serviços Online
+          </div>
+          <div id="stat-up" class="text-2xl font-bold text-emerald-400 mt-1">
+            0
+          </div>
+        </div>
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+          <div
+            class="text-xs text-slate-400 font-medium uppercase tracking-wider"
+          >
+            Serviços com Falha
+          </div>
+          <div id="stat-down" class="text-2xl font-bold text-rose-400 mt-1">
+            0
+          </div>
+        </div>
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+          <div
+            class="text-xs text-slate-400 font-medium uppercase tracking-wider"
+          >
+            Última Atualização
+          </div>
+          <div
+            id="stat-last-update"
+            class="text-sm font-mono text-slate-300 mt-2"
+          >
+            Aguardando...
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Targets Table / Cards -->
+      <div
+        class="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-xl"
+      >
+        <div
+          class="p-4 border-b border-slate-800 flex justify-between items-center"
+        >
+          <h2
+            class="text-base font-semibold text-white flex items-center gap-2"
+          >
+            Serviços Monitorados
+          </h2>
+          <span class="text-xs text-slate-400"
+            >Atualizações automáticas em tempo real</span
+          >
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-300">
+            <thead
+              class="bg-slate-950/60 text-xs uppercase text-slate-400 border-b border-slate-800"
+            >
+              <tr>
+                <th class="px-6 py-3">Status</th>
+                <th class="px-6 py-3">Serviço / URL</th>
+                <th class="px-6 py-3">Código HTTP</th>
+                <th class="px-6 py-3">Latência</th>
+                <th class="px-6 py-3">Diagnóstico</th>
+              </tr>
+            </thead>
+            <tbody id="targets-tbody" class="divide-y divide-slate-800/60">
+              <tr>
+                <td colspan="5" class="px-6 py-8 text-center text-slate-500">
+                  Aguardando primeiro evento do servidor...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Live Event Log Stream -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex gap-2">
+            <i class="size-5" data-lucide="logs"></i>
+            <h3
+              class="text-sm font-semibold text-slate-300 flex items-center gap-2"
+            >
+              Logs de Eventos
+            </h3>
+          </div>
+
+          <button
+            onclick="clearLogs()"
+            class="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            Limpar logs
+          </button>
+        </div>
+        <div
+          id="log-stream"
+          class="bg-slate-950 font-mono text-xs text-slate-400 p-3 rounded-lg h-36 overflow-y-auto space-y-1 border border-slate-800/80"
+        >
+          <div class="text-slate-600">
+            [Sistema] Dashboard pronto. Abrindo conexão EventSource...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let eventSource = new EventSource("/api/v1/events");
+      const connBadge = document.getElementById("conn-badge");
+      const connText = document.getElementById("conn-text");
+      const targetsTbody = document.getElementById("targets-tbody");
+      const statTotal = document.getElementById("stat-total");
+      const statUp = document.getElementById("stat-up");
+      const statDown = document.getElementById("stat-down");
+      const statLastUpdate = document.getElementById("stat-last-update");
+      const logStream = document.getElementById("log-stream");
+      const restartButton = document.getElementById("refresh-button");
+      const stopButton = document.getElementById("stop-button");
+
+      function addLog(msg, type = "info") {
+        const time = new Date().toLocaleTimeString();
+        const div = document.createElement("div");
+        let color = "text-slate-400";
+        if (type === "success") color = "text-emerald-400";
+        if (type === "error") color = "text-rose-400";
+        if (type === "warn") color = "text-amber-400";
+
+        div.className = `${color}`;
+        div.textContent = `[${time}] ${msg}`;
+        logStream.appendChild(div);
+        logStream.scrollTop = logStream.scrollHeight;
+      }
+
+      function clearLogs() {
+        logStream.innerHTML = "";
+      }
+
+      function setConnectionStatus(status) {
+        if (status === "connected") {
+          connBadge.className =
+            "inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold bg-emerald-950/60 border border-emerald-800 text-emerald-400";
+          connBadge.querySelector("span").className =
+            "w-2.5 h-2.5 rounded-full bg-emerald-400 live-dot";
+          connText.textContent = "Conectado ao SSE";
+        } else if (status === "connecting") {
+          connBadge.className =
+            "inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold bg-amber-950/60 border border-amber-800 text-amber-400";
+          connBadge.querySelector("span").className =
+            "w-2.5 h-2.5 rounded-full bg-amber-400 live-dot";
+          connText.textContent = "Reconectando...";
+        } else {
+          connBadge.className =
+            "inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-semibold bg-rose-950/60 border border-rose-800 text-rose-400";
+          connBadge.querySelector("span").className =
+            "w-2.5 h-2.5 rounded-full bg-rose-400";
+          connText.textContent = "Desconectado";
+        }
+      }
+
+      function renderTargets(targets) {
+        if (!Array.isArray(targets) || targets.length === 0) return;
+
+        statTotal.textContent = targets.length;
+        const upCount = targets.filter((t) => t.IsUp).length;
+        const downCount = targets.length - upCount;
+        statUp.textContent = upCount;
+        statDown.textContent = downCount;
+        statLastUpdate.textContent = new Date().toLocaleTimeString();
+
+        targetsTbody.innerHTML = targets
+          .map((t) => {
+            const isUp = t.IsUp;
+            const statusBadge = isUp
+              ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-900/40 text-emerald-400 border border-emerald-800/60">🟢 UP</span>`
+              : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-900/40 text-rose-400 border border-rose-800/60">🔴 DOWN</span>`;
+
+            const codeText = t.StatusCode > 0 ? t.StatusCode : "N/A";
+            const latencyText = t.Latency
+              ? typeof t.Latency === "number"
+                ? (t.Latency / 1000000).toFixed(2) + "ms"
+                : t.Latency
+              : "--";
+            const errorText = t.Error
+              ? `<span class="text-rose-400 font-mono text-xs">${t.Error}</span>`
+              : `<span class="text-slate-500">Operacional</span>`;
+
+            return `
           <tr class="hover:bg-slate-900/40 transition-colors">
             <td class="px-6 py-4">${statusBadge}</td>
             <td class="px-6 py-4 font-medium text-white break-all">${t.URL}</td>
@@ -174,51 +282,74 @@
             <td class="px-6 py-4">${errorText}</td>
           </tr>
         `;
-      }).join("");
-    }
+          })
+          .join("");
+      }
 
-    // Inicialização do Server-Sent Events (SSE) nativo do Browser
-    function initSSE() {
-      addLog("Conectando ao endpoint SSE: /api/v1/events...", "warn");
-      setConnectionStatus("connecting");
+      function stopConnection() {
+        if (eventSource.readyState === EventSource.CLOSED) {
+          return;
+        }
+        eventSource.close();
+        setConnectionStatus("disconnected");
+        addLog("Monitoramento pausado pelo usuário.", "warn");
+      }
 
-      const eventSource = new EventSource("/api/v1/events");
+      function restartConnection() {
+        if (eventSource.readyState === EventSource.OPEN) {
+          stopConnection();
+        }
+        initSSE();
+      }
 
-      eventSource.onopen = () => {
-        setConnectionStatus("connected");
-        addLog("Conexão SSE estabelecida com sucesso!", "success");
-      };
-
-      eventSource.onerror = (err) => {
+      // Inicialização do Server-Sent Events (SSE) nativo do Browser
+      function initSSE() {
+        addLog("Conectando ao endpoint SSE: /api/v1/events...", "warn");
         setConnectionStatus("connecting");
-        addLog("Conexão SSE oscilou. O navegador tentará reconectar automaticamente...", "warn");
-      };
 
-      // Escuta o evento nomeado "status"
-      eventSource.addEventListener("status", (e) => {
-        try {
-          const data = JSON.parse(e.data);
-          addLog(`Evento [status] recebido: ${data.length} serviços atualizados`, "success");
-          renderTargets(data);
-        } catch (err) {
-          addLog(`Erro ao parsear dados do evento: ${err}`, "error");
-        }
-      });
+        eventSource.onopen = () => {
+          setConnectionStatus("connected");
+          addLog("Conexão SSE estabelecida com sucesso!", "success");
+        };
 
-      // Escuta o evento nomeado "alert"
-      eventSource.addEventListener("alert", (e) => {
-        try {
-          const alertData = JSON.parse(e.data);
-          addLog(`⚠️ ALERTA: Serviço indisponível: ${alertData.URL}`, "error");
-        } catch (err) {
-          addLog(`Erro no alerta: ${err}`, "error");
-        }
-      });
-    }
+        eventSource.onerror = (err) => {
+          setConnectionStatus("connecting");
+          addLog(
+            "Conexão SSE oscilou. O navegador tentará reconectar automaticamente...",
+            "warn",
+          );
+        };
 
-    // Inicia a conexão
-    initSSE();
-  </script>
-</body>
+        // Escuta o evento nomeado "status"
+        eventSource.addEventListener("status", (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            addLog(
+              `Evento [status] recebido: ${data.length} serviços atualizados`,
+              "success",
+            );
+            renderTargets(data);
+          } catch (err) {
+            addLog(`Erro ao parsear dados do evento: ${err}`, "error");
+          }
+        });
+
+        // Escuta o evento nomeado "alert"
+        eventSource.addEventListener("alert", (e) => {
+          try {
+            const alertData = JSON.parse(e.data);
+            addLog(`ALERTA: Serviço indisponível: ${alertData.URL}`, "error");
+          } catch (err) {
+            addLog(`Erro no alerta: ${err}`, "error");
+          }
+        });
+      }
+
+      // Inicia a conexão
+      initSSE();
+    </script>
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
 </html>
-
