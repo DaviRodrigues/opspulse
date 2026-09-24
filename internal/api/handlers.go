@@ -7,18 +7,10 @@ import (
 )
 
 func (s *Server) getStatus(w http.ResponseWriter, r *http.Request) {
-	targets, err := s.targetLoader.Load()
-	if err != nil {
-		sendError(w,
-			http.StatusInternalServerError,
-			"falha ao carregar targets configurados",
-		)
-		return
-	}
-
 	sendJSON(w,
 		http.StatusOK,
-		checker.CheckAll(r.Context(), targets),
+		checker.CheckAll(r.Context(), 
+		s.monitorConfig.TargetURLs),
 	)
 }
 

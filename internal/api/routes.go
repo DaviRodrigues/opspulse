@@ -9,5 +9,7 @@ func (s *Server) registerRoutes() {
 
 	s.router.Route("/api/v1", func(r chi.Router) {
 		r.Get("/status", s.getStatus)
+
+		r.Get("/events", s.handleSSE)
 	})
 }
