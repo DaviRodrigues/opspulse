@@ -9,6 +9,7 @@ type EventBroker struct {
 	register   chan chan Event
 	unregister chan chan Event
 	publish    chan Event
+	lastEvent *Event
 }
 
 func NewCheckBroker() *EventBroker {
@@ -40,6 +41,10 @@ func (b *EventBroker) run() {
 		case client := <-b.register:
 			b.clients[client] = true
 			slog.Info("Client connected. Total clients: ", "total", len(b.clients))
+
+			if b.lastEvent != nil {
+				client <- *b.lastEvent
+			}
 		case client := <-b.unregister:
 			if _, ok := b.clients[client]; ok {
 				delete(b.clients, client)
@@ -47,6 +52,7 @@ func (b *EventBroker) run() {
 				slog.Info("Client disconnected. Total clients: ", "total", len(b.clients))
 			}
 		case data := <-b.publish:
+			b.lastEvent = &data
 			for client := range b.clients {
 				select {
 				case client <- data:
