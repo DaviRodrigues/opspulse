@@ -194,7 +194,7 @@
     </div>
 
     <script>
-      let eventSource = new EventSource("/api/v1/events");
+      let eventSource = null;
       const connBadge = document.getElementById("conn-badge");
       const connText = document.getElementById("conn-text");
       const targetsTbody = document.getElementById("targets-tbody");
@@ -304,6 +304,7 @@
 
       // Inicialização do Server-Sent Events (SSE) nativo do Browser
       function initSSE() {
+        eventSource = new EventSource("/api/v1/events");
         addLog("Conectando ao endpoint SSE: /api/v1/events...", "warn");
         setConnectionStatus("connecting");
 
