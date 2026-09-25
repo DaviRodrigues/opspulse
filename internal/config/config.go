@@ -6,14 +6,30 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
+// TODO: solução temporária não é ideal isso, antipattern
+var API = "API"
+var APP = "APP"
+
 type Config struct {
+	App     AppConfig
+	Log     LogConfig
 	Discord DiscordConfig
 	Monitor MonitorConfig
 	Server  ServerConfig
 }
 
-func Load(targetLoader file.TargetLoader, envManager file.EnvFile) (Config, error) {
+func Load(typeLog string, targetLoader file.TargetLoader, envManager file.EnvFile) (Config, error) {
 	var err_s []error
+
+	appConfig, errApp := LoadAppConfig(envManager)
+	if errApp != nil {
+		err_s = append(err_s, errApp)
+	}
+
+	logConfig, errLog := LoadLogConfig(envManager, typeLog, "./log")
+	if errLog != nil {
+		err_s = append(err_s, errLog)
+	}
 
 	serverConfig, errServer := LoadServerConfig(envManager)
 	if errServer != nil {
@@ -35,8 +51,11 @@ func Load(targetLoader file.TargetLoader, envManager file.EnvFile) (Config, erro
 	}
 
 	return Config{
+		App:     appConfig,
+		Log:     logConfig,
 		Monitor: monitorConfig,
 		Discord: discordConfig,
 		Server:  serverConfig,
 	}, nil
 }
+
