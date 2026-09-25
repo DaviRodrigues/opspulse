@@ -18,30 +18,28 @@ import (
 )
 
 type Server struct {
-	router        *chi.Mux
-	managerHttp   *http.Server
-	monitorConfig config.MonitorConfig
-	broker        *EventBroker
+	router      *chi.Mux
+	managerHttp *http.Server
+	config config.Config
+	broker      *EventBroker
 }
 
-func NewServer(ctx context.Context, monitorConfig config.MonitorConfig, port string) *Server {
+func NewServer(ctx context.Context, geralConfig config.Config) *Server {
 	r := chi.NewRouter()
-	server := &Server{
+	return &Server{
 		router:        r,
-		monitorConfig: monitorConfig,
+		config: geralConfig,
 		managerHttp: &http.Server{
-			Addr:         ":" + port,
+			Addr:         ":" + geralConfig.Server.Port,
 			Handler:      r,
-			ReadTimeout:  time.Second * 5,
-			WriteTimeout: 0,
+			ReadTimeout:  geralConfig.Server.ReadTimeout,
+			WriteTimeout: geralConfig.Server.WriteTimeout,
 			BaseContext: func(l net.Listener) context.Context {
 				return ctx
 			},
 		},
 		broker: NewCheckBroker(),
 	}
-
-	return server
 }
 
 func (s *Server) SetConfigures(loggerManager *slog.Logger) {
@@ -54,7 +52,7 @@ func (s *Server) SetConfigures(loggerManager *slog.Logger) {
 	s.registerRoutes()
 }
 
-func (s *Server) Setup(ctx context.Context, monitorCfg config.MonitorConfig) error {
+func (s *Server) Setup(ctx context.Context) error {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -70,7 +68,7 @@ func (s *Server) Setup(ctx context.Context, monitorCfg config.MonitorConfig) err
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		s.StartMonitoring(ctx, monitorCfg)
+		s.StartMonitoring(ctx)
 	}()
 
 	<-ctx.Done()
@@ -92,11 +90,11 @@ func (s *Server) Setup(ctx context.Context, monitorCfg config.MonitorConfig) err
 	return nil
 }
 
-func (s *Server) StartMonitoring(ctx context.Context, cfg config.MonitorConfig) {
-	ticker := time.NewTicker(time.Second * 30)
+func (s *Server) StartMonitoring(ctx context.Context) {
+	ticker := time.NewTicker(s.config.Monitor.Interval)
 	defer ticker.Stop()
 
-	event := NewStatusEvent(checker.CheckAll(ctx, cfg.TargetURLs))
+	event := NewStatusEvent(checker.CheckAll(ctx, s.config.Monitor.TargetURLs))
 	s.broker.Publish(event)
 
 	for {
@@ -105,7 +103,7 @@ func (s *Server) StartMonitoring(ctx context.Context, cfg config.MonitorConfig) 
 			slog.Info("🛑 Encerrando monitoramento de forma segura")
 			return
 		case <-ticker.C:
-			event := NewStatusEvent(checker.CheckAll(ctx, cfg.TargetURLs))
+			event := NewStatusEvent(checker.CheckAll(ctx, s.config.Monitor.TargetURLs))
 			s.broker.Publish(event)
 		}
 	}

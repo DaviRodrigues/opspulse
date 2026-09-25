@@ -33,20 +33,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	monitorCfg, err := config.LoadMonitorConfig(
-		&file.JSONFile{
-			FileDefault: file.FileDefault{Name: "target.json", Path: "./target"},
+	cfg, err := config.Load(&file.JSONFile{
+		FileDefault: file.FileDefault{
+			Name: "target.json",
+			Path: "./target",
 		},
-		file.NewEnvFile(),
-	)
+	}, file.NewEnvFile())
 	if err != nil {
 		slog.Error("Falha crítica ao carregar configurações", "error", err)
 		os.Exit(1)
 	}
 
-	server := api.NewServer(ctx, monitorCfg, "3333")
+	server := api.NewServer(ctx, cfg)
 	server.SetConfigures(loggerManager)
-	if err = server.Setup(ctx, monitorCfg); err != nil {
+	if err = server.Setup(ctx); err != nil {
 		slog.Error("Falha na execução do servidor", "error", err)
 		os.Exit(1)
 	}

@@ -12,7 +12,7 @@ import (
 func (s *Server) getStatus(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w,
 		http.StatusOK,
-		checker.CheckAll(r.Context(), s.monitorConfig.TargetURLs),
+		checker.CheckAll(r.Context(), s.config.Monitor.TargetURLs),
 	)
 }
 
