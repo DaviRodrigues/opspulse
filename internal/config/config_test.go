@@ -1,6 +1,7 @@
 package config
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -9,10 +10,10 @@ import (
 
 func TestEnvLoadOk(t *testing.T) {
 	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "target.json")
 	jsonLoader := &file.JSONFile{
 		FileDefault: file.FileDefault{
-			Name: "targets.json",
-			Path: tmpDir,
+			Path: filePath,
 		},
 	}
 
@@ -41,10 +42,10 @@ func TestEnvLoadOk(t *testing.T) {
 
 func TestEnvLoadErr(t *testing.T) {
 	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "target.json")
 	jsonLoader := &file.JSONFile{
 		FileDefault: file.FileDefault{
-			Name: "targets.json",
-			Path: tmpDir,
+			Path: filePath,
 		},
 	}
 

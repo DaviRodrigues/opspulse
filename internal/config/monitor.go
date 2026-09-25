@@ -21,6 +21,15 @@ func LoadMonitorConfig(targetLoader file.TargetLoader, envManager file.EnvFile) 
 		err_s = append(err_s, err)
 	}
 
+	targetsFile, err := envManager.LoadVariable("MONITOR_TARGETS_FILE", "./target/target.json")
+	if err != nil {
+		err_s = append(err_s, err)
+	}
+
+	if err := targetLoader.NewFile(targetsFile); err != nil {
+		err_s = append(err_s, err)
+	}
+
 	targetUrls, err := targetLoader.Load()
 	if err != nil {
 		err_s = append(err_s, err)
