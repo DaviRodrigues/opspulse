@@ -21,6 +21,15 @@ func main() {
 	)
 	defer stop()
 
+	cfg, err := config.Load(
+		&file.JSONFile{},
+		file.NewEnvFile(),
+	)
+	if err != nil {
+		slog.Error("Falha crítica ao carregar configurações", "error", err)
+		os.Exit(1)
+	}
+
 	handler, err := logger.HandlerDefaultText(slog.LevelDebug, "./log/api")
 	if err != nil {
 		slog.Error("Não foi possível carregar o handler do log", "error", err)
@@ -30,17 +39,6 @@ func main() {
 	loggerManager, err := logger.SetupSlog(handler)
 	if err != nil {
 		slog.Error("Não foi possível iniciar o log", "error", err)
-		os.Exit(1)
-	}
-
-	cfg, err := config.Load(&file.JSONFile{
-		FileDefault: file.FileDefault{
-			Name: "target.json",
-			Path: "./target",
-		},
-	}, file.NewEnvFile())
-	if err != nil {
-		slog.Error("Falha crítica ao carregar configurações", "error", err)
 		os.Exit(1)
 	}
 

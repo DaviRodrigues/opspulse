@@ -14,8 +14,6 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/logger"
 )
 
-// TODO preciso depois testar a integração disso de forma manual (remova o .env.test NÃO ESQUECER)
-
 func main() {
 	ctx, stop := signal.NotifyContext(
 		context.Background(),
@@ -24,13 +22,10 @@ func main() {
 	)
 	defer stop()
 
-	// TODO depois vou precisar perguntar ao usuário qual arquivo ele quer carregar antes de continuar
-	cfg, err := config.Load(&file.JSONFile{
-		FileDefault: file.FileDefault{
-			Name: "target.json",
-			Path: "./target",
-		},
-	}, file.NewEnvFile())
+	cfg, err := config.Load(
+		&file.JSONFile{}, 
+		file.NewEnvFile(),
+	)
 	if err != nil {
 		slog.Error("Falha crítica ao carregar configurações", "error", err)
 		os.Exit(1)
