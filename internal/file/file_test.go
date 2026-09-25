@@ -9,10 +9,10 @@ import (
 
 func TestJSONFile_CreateAndLoad_Default(t *testing.T) {
 	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "target.json")
 	jsonFile := &JSONFile{
 		FileDefault: FileDefault{
-			Name: "targets.json",
-			Path: tmpDir,
+			Path: filePath,
 		},
 	}
 
@@ -57,8 +57,7 @@ func TestJSONFile_Load_CustomValid(t *testing.T) {
 
 	jsonFile := &JSONFile{
 		FileDefault: FileDefault{
-			Name: "custom.json",
-			Path: tmpDir,
+			Path: filePath,
 		},
 	}
 
@@ -94,8 +93,7 @@ func TestJSONFile_Validate_InvalidURL(t *testing.T) {
 
 	jsonFile := &JSONFile{
 		FileDefault: FileDefault{
-			Name: "invalid.json",
-			Path: tmpDir,
+			Path: filePath,
 		},
 	}
 
@@ -115,7 +113,6 @@ func TestJSONFile_Validate_Empty(t *testing.T) {
 
 	jsonFile := &JSONFile{
 		FileDefault: FileDefault{
-			Name: "empty.json",
 			Path: tmpDir,
 		},
 	}

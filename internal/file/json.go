@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -19,8 +20,8 @@ func (j *JSONFile) Create() error {
 		return fmt.Errorf("falha ao serializar targets padrão: %w", err)
 	}
 
-	if err := os.WriteFile(j.FullPath(), data, 0644); err != nil {
-		return fmt.Errorf("falha ao criar arquivo %s: %w", j.FullPath(), err)
+	if err := os.WriteFile(j.Path, data, 0644); err != nil {
+		return fmt.Errorf("falha ao criar arquivo %s: %w", j.Path, err)
 	}
 
 	return nil
@@ -73,19 +74,28 @@ func (j *JSONFile) Load() ([]Target, error) {
 		}
 	}
 
-	bytes, err := os.ReadFile(j.FullPath())
+	bytes, err := os.ReadFile(j.Path)
 	if err != nil {
-		return nil, fmt.Errorf("falha ao ler arquivo %s: %w", j.FullPath(), err)
+		return nil, fmt.Errorf("falha ao ler arquivo %s: %w", j.Path, err)
 	}
 
 	var targets []Target
 	if err := json.Unmarshal(bytes, &targets); err != nil {
-		return nil, fmt.Errorf("erro de sintaxe no JSON em %s: %w", j.FullPath(), err)
+		return nil, fmt.Errorf("erro de sintaxe no JSON em %s: %w", j.Path, err)
 	}
 
 	if err := j.Validate(targets); err != nil {
-		return nil, fmt.Errorf("validação falhou em %s: %w", j.FullPath(), err)
+		return nil, fmt.Errorf("validação falhou em %s: %w", j.Path, err)
 	}
 
 	return targets, nil
+}
+
+func (j *JSONFile) NewFile(path string) (error) {
+	if !strings.HasSuffix(path, ".json") {
+		return nil
+	}
+
+	j.FileDefault = FileDefault{path}
+	return nil
 }

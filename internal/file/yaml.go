@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v3"
@@ -20,8 +21,8 @@ func (y *YAMLFile) Create() error {
 		return fmt.Errorf("falha ao serializar targets padrão: %w", err)
 	}
 
-	if err := os.WriteFile(y.FullPath(), data, 0644); err != nil {
-		return fmt.Errorf("falha ao criar arquivo %s: %w", y.FullPath(), err)
+	if err := os.WriteFile(y.Path, data, 0644); err != nil {
+		return fmt.Errorf("falha ao criar arquivo %s: %w", y.Path, err)
 	}
 
 	return nil
@@ -73,19 +74,27 @@ func (y *YAMLFile) Load() ([]Target, error) {
 		}
 	}
 
-	bytes, err := os.ReadFile(y.FullPath())
+	bytes, err := os.ReadFile(y.Path)
 	if err != nil {
-		return nil, fmt.Errorf("falha ao ler arquivo %s: %w", y.FullPath(), err)
+		return nil, fmt.Errorf("falha ao ler arquivo %s: %w", y.Path, err)
 	}
 
 	var targets []Target
 	if err := yaml.Unmarshal(bytes, &targets); err != nil {
-		return nil, fmt.Errorf("erro de sintaxe no YAML em %s: %w", y.FullPath(), err)
+		return nil, fmt.Errorf("erro de sintaxe no YAML em %s: %w", y.Path, err)
 	}
 
 	if err := y.Validate(targets); err != nil {
-		return nil, fmt.Errorf("validação falhou em %s: %w", y.FullPath(), err)
+		return nil, fmt.Errorf("validação falhou em %s: %w", y.Path, err)
 	}
 
 	return targets, nil
+}
+
+func (y *YAMLFile) NewTypeFile(path string) (FileDefault, error) {
+	if !strings.HasSuffix(path, ".yaml") {
+		return FileDefault{}, nil
+	}
+
+	return FileDefault{Path: path}, nil
 }

@@ -21,6 +21,7 @@ var defaultTargets = []Target{
 
 type TargetLoader interface {
 	Load() ([]Target, error)
+	NewFile(path string) (error)
 }
 
 type Target struct {
