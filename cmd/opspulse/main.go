@@ -23,7 +23,8 @@ func main() {
 	defer stop()
 
 	cfg, err := config.Load(
-		&file.JSONFile{}, 
+		config.APP,
+		&file.JSONFile{},
 		file.NewEnvFile(),
 	)
 	if err != nil {
@@ -31,13 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	handler, err := logger.HandlerDefaultText(slog.LevelDebug, "./log/app")
-	if err != nil {
-		slog.Error("Não foi possível carregar o handler do log", "error", err)
-		os.Exit(1)
-	}
-
-	_, err = logger.SetupSlog(handler)
+	_, err = logger.InitLogger(cfg.App, cfg.Log)
 	if err != nil {
 		slog.Error("Não foi possível iniciar o log", "error", err)
 		os.Exit(1)
@@ -45,6 +40,7 @@ func main() {
 
 	var notifier checker.Notifier
 	var triggerChan chan struct{}
+
 	bot, err := discord.New(&cfg.Discord)
 	if err != nil {
 		slog.Warn("Não foi possível iniciar o bot do Discord, continuando apenas com monitor local", "error", err)
@@ -60,3 +56,4 @@ func main() {
 
 	checker.StartMonitoring(ctx, notifier, triggerChan, cfg.Monitor)
 }
+

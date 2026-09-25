@@ -21,31 +21,29 @@ func main() {
 	)
 	defer stop()
 
+	envFile := file.NewEnvFile()
 	cfg, err := config.Load(
+		config.API,
 		&file.JSONFile{},
-		file.NewEnvFile(),
+		envFile,
 	)
 	if err != nil {
 		slog.Error("Falha crítica ao carregar configurações", "error", err)
 		os.Exit(1)
 	}
 
-	handler, err := logger.HandlerDefaultText(slog.LevelDebug, "./log/api")
-	if err != nil {
-		slog.Error("Não foi possível carregar o handler do log", "error", err)
-		os.Exit(1)
-	}
-
-	loggerManager, err := logger.SetupSlog(handler)
+	loggerManager, err := logger.InitLogger(cfg.App, cfg.Log)
 	if err != nil {
 		slog.Error("Não foi possível iniciar o log", "error", err)
 		os.Exit(1)
 	}
 
-	server := api.NewServer(ctx, cfg)
+	server := api.NewServer(ctx, cfg.Server, cfg.Monitor)
 	server.SetConfigures(loggerManager)
+
 	if err = server.Setup(ctx); err != nil {
 		slog.Error("Falha na execução do servidor", "error", err)
 		os.Exit(1)
 	}
 }
+
