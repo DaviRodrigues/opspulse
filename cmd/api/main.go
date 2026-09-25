@@ -44,7 +44,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	server := api.NewServer(monitorCfg, "3333")
+	server := api.NewServer(ctx, monitorCfg, "3333")
 	server.SetConfigures(loggerManager)
 	if err = server.Setup(ctx, monitorCfg); err != nil {
 		slog.Error("Falha na execução do servidor", "error", err)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -23,7 +24,7 @@ type Server struct {
 	broker        *EventBroker
 }
 
-func NewServer(monitorConfig config.MonitorConfig, port string) *Server {
+func NewServer(ctx context.Context, monitorConfig config.MonitorConfig, port string) *Server {
 	r := chi.NewRouter()
 	server := &Server{
 		router:        r,
@@ -33,6 +34,9 @@ func NewServer(monitorConfig config.MonitorConfig, port string) *Server {
 			Handler:      r,
 			ReadTimeout:  time.Second * 5,
 			WriteTimeout: 0,
+			BaseContext: func(l net.Listener) context.Context {
+				return ctx
+			},
 		},
 		broker: NewCheckBroker(),
 	}
@@ -78,14 +82,13 @@ func (s *Server) Setup(ctx context.Context, monitorCfg config.MonitorConfig) err
 	defer cancel()
 
 	err := s.managerHttp.Shutdown(timeoutCtx)
-	wg.Wait()
 	if err != nil {
 		slog.Error("Server forced to shutdown", "error", err)
 		return err
 	}
 
+	wg.Wait()
 	slog.Info("Server gracefully stopped.")
-
 	return nil
 }
 
@@ -104,39 +107,6 @@ func (s *Server) StartMonitoring(ctx context.Context, cfg config.MonitorConfig) 
 		case <-ticker.C:
 			event := NewStatusEvent(checker.CheckAll(ctx, cfg.TargetURLs))
 			s.broker.Publish(event)
-		}
-	}
-}
-
-func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
-	flusher, ok := prepareSSE(w)
-	if !ok {
-		slog.Error("Streaming not supported")
-		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
-		return
-	}
-
-	clientChan := make(chan Event, 10)
-	s.broker.Register(clientChan)
-	defer s.broker.UnRegister(clientChan)
-
-	heartbeat := time.NewTicker(30 * time.Second)
-	defer heartbeat.Stop()
-	for {
-		select {
-		case <-r.Context().Done():
-			return
-		case event := <-clientChan:
-			data, err := formatEvent(event)
-			if err != nil {
-				continue
-			}
-			slog.Info("Event ", "data", event)
-			w.Write(data)
-			flusher.Flush()
-		case <-heartbeat.C:
-			w.Write([]byte(": ping\n\n"))
-			flusher.Flush()
 		}
 	}
 }
