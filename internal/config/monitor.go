@@ -16,7 +16,7 @@ type MonitorConfig struct {
 func LoadMonitorConfig(targetLoader file.TargetLoader, envManager file.EnvFile) (MonitorConfig, error) {
 	var err_s []error
 
-	checkInterval, err := envManager.LoadDurationEnv("CHECK_INTERVAL")
+	checkInterval, err := envManager.LoadDurationEnv("MONITOR_INTERVAL", (5 * time.Minute).String())
 	if err != nil {
 		err_s = append(err_s, err)
 	}

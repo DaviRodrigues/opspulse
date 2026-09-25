@@ -19,7 +19,7 @@ func TestEnvLoadOk(t *testing.T) {
 	t.Setenv("DISCORD_TOKEN", "meu-token-secreto")
 	t.Setenv("DISCORD_CHANNEL_ID", "123456789")
 	t.Setenv("DISCORD_GUILD_ID", "123456789")
-	t.Setenv("CHECK_INTERVAL", "15s")
+	t.Setenv("MONITOR_INTERVAL", "15s")
 
 	cfg, err := Load(jsonLoader, file.NewEnvFile())
 	if err != nil {

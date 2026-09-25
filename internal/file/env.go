@@ -9,28 +9,30 @@ import (
 
 	"github.com/DaviRodrigues/opspulse/internal/errs"
 	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv/autoload"
 )
 
-// TODO por agora o FileDefault não é necessário
-type EnvFile struct {}
+type EnvFile struct{}
 
 func NewEnvFile(filenames ...string) EnvFile {
-	_ = godotenv.Load(filenames...)
+    if err := godotenv.Load(filenames...); err != nil {
+        slog.Warn("Não foi possível carregar arquivo .env (usando variáveis do sistema se existirem)", "error", err)
+    }
 	return EnvFile{}
 }
 
 func (e *EnvFile) LoadVariable(envVariable string, fallback string) (string, error) {
 	value, exists := os.LookupEnv(envVariable)
-	if !exists {
+	if !exists || strings.TrimSpace(value) == "" {
+		if fallback != "" {
+			return fallback, nil
+		}
 		slog.Error("Variável não existe no .env",
 			"variable", envVariable,
 		)
 		return "", errs.ErrConfigNotFound
 	}
 
-	if strings.TrimSpace(value) == "" {
-		return fallback, nil
-	}
 	return value, nil
 }
 
@@ -56,10 +58,10 @@ func (e *EnvFile) LoadListEnv(envVariable string) ([]string, error) {
 	return cleanUrls, nil
 }
 
-func (e *EnvFile) LoadDurationEnv(envVariable string) (time.Duration, error) {
+func (e *EnvFile) LoadDurationEnv(envVariable string, fallback string) (time.Duration, error) {
 	value, err := e.LoadVariable(
 		envVariable,
-		(30 * time.Second).String(),
+		fallback,
 	)
 	if err != nil {
 		return 0, err

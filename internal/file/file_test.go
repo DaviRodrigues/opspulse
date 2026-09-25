@@ -138,7 +138,7 @@ func TestEnvFile_Helpers(t *testing.T) {
 		t.Errorf("esperava 'meu_valor', recebeu: %s (err: %v)", val, err)
 	}
 
-	dur, err := envFile.LoadDurationEnv("TEST_DURATION")
+	dur, err := envFile.LoadDurationEnv("TEST_DURATION", "")
 	if err != nil || dur != 45*time.Second {
 		t.Errorf("esperava 45s, recebeu: %v (err: %v)", dur, err)
 	}

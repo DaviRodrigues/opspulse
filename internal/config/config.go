@@ -9,6 +9,7 @@ import (
 type Config struct {
 	Discord DiscordConfig
 	Monitor MonitorConfig
+	Server  ServerConfig
 }
 
 func Load(targetLoader file.TargetLoader, envManager file.EnvFile) (Config, error) {
@@ -24,6 +25,11 @@ func Load(targetLoader file.TargetLoader, envManager file.EnvFile) (Config, erro
 		err_s = append(err_s, errMonitor)
 	}
 
+	serverConfig, errServer := LoadServerConfig(envManager)
+	if errServer != nil {
+		err_s = append(err_s, errServer)
+	}
+
 	if len(err_s) > 0 {
 		return Config{}, errors.Join(err_s...)
 	}
@@ -31,5 +37,6 @@ func Load(targetLoader file.TargetLoader, envManager file.EnvFile) (Config, erro
 	return Config{
 		Monitor: monitorConfig,
 		Discord: discordConfig,
+		Server: serverConfig,
 	}, nil
 }
