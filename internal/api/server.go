@@ -28,7 +28,6 @@ type Server struct {
 
 func NewServer(ctx context.Context, serverCfg config.ServerConfig, monitorCfg config.MonitorConfig) *Server {
 	r := chi.NewRouter()
-	fmt.Printf("WRITE_TIMEOUT %v READ_TIMEOUT %v", serverCfg.WriteTimeout, serverCfg.ReadTimeout)
 	return &Server{
 		router:        r,
 		serverConfig:  serverCfg,
