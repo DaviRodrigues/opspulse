@@ -2,10 +2,9 @@ package config
 
 import (
 	"errors"
-	"os"
-	"strings"
 	"time"
 
+	"github.com/DaviRodrigues/opspulse/internal/errs"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
@@ -15,7 +14,7 @@ type MonitorConfig struct {
 	AlertThreshold int
 }
 
-func LoadMonitorConfig(targetLoader file.TargetLoader, envManager file.EnvFile) (MonitorConfig, error) {
+func LoadMonitorConfig(envManager file.EnvFile) (MonitorConfig, error) {
 	var err_s []error
 
 	checkInterval, err := envManager.LoadDurationEnv("MONITOR_INTERVAL", (5 * time.Minute).String())
@@ -23,13 +22,17 @@ func LoadMonitorConfig(targetLoader file.TargetLoader, envManager file.EnvFile) 
 		err_s = append(err_s, err)
 	}
 
-	if customTargetFile, exists := os.LookupEnv("MONITOR_TARGETS_FILE"); exists && strings.TrimSpace(customTargetFile) != "" {
-		if err := targetLoader.NewFile(strings.TrimSpace(customTargetFile)); err != nil {
-			err_s = append(err_s, err)
-		}
+	pathTargetFile, err := envManager.LoadVariable("MONITOR_TARGETS_FILE", "./target/target.json")
+	if err != nil {
+		err_s = append(err_s, err)
 	}
 
-	targetUrls, err := targetLoader.Load()
+	loader, isValidFormat := file.GetLoaderByFile(pathTargetFile)
+	if !isValidFormat {
+		err_s = append(err_s, errs.ErrInvalidFileFormat)
+	}
+
+	targetUrls, err := loader.Load()
 	if err != nil {
 		err_s = append(err_s, err)
 	}
@@ -44,4 +47,3 @@ func LoadMonitorConfig(targetLoader file.TargetLoader, envManager file.EnvFile) 
 		AlertThreshold: 0,
 	}, nil
 }
-

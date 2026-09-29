@@ -11,17 +11,12 @@ import (
 
 func TestEnvLoadOk(t *testing.T) {
 	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "target.json")
-	jsonLoader := &file.JSONFile{
-		FileDefault: file.FileDefault{
-			Path: filePath,
-		},
-	}
 
 	t.Setenv("DISCORD_TOKEN", "meu-token-secreto")
 	t.Setenv("DISCORD_CHANNEL_ID", "123456789")
 	t.Setenv("DISCORD_GUILD_ID", "123456789")
 	t.Setenv("MONITOR_INTERVAL", "15s")
+	t.Setenv("MONITOR_TARGETS_FILE", filepath.Join(tmpDir, "target.json"))
 	t.Setenv("APP_NAME", "custom-pulse")
 	t.Setenv("APP_ENV", "production")
 	t.Setenv("LOG_LEVEL", "debug")
@@ -29,7 +24,6 @@ func TestEnvLoadOk(t *testing.T) {
 
 	cfg, err := Load(
 		APP,
-		jsonLoader, 
 		file.NewEnvFile(),
 	)
 	if err != nil {
@@ -66,19 +60,10 @@ func TestEnvLoadOk(t *testing.T) {
 }
 
 func TestEnvLoadErr(t *testing.T) {
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "target.json")
-	jsonLoader := &file.JSONFile{
-		FileDefault: file.FileDefault{
-			Path: filePath,
-		},
-	}
-
 	t.Setenv("DISCORD_TOKEN", "")
 
 	_, err := Load(
 		APP,
-		jsonLoader, 
 		file.NewEnvFile(),
 	)
 
@@ -146,4 +131,3 @@ func TestServerConfig_Fallback(t *testing.T) {
 		t.Errorf("esperava fallback para PORT '9090', recebeu: %s", cfg.Port)
 	}
 }
-

@@ -18,7 +18,7 @@ type Config struct {
 	Server  ServerConfig
 }
 
-func Load(typeLog string, targetLoader file.TargetLoader, envManager file.EnvFile) (Config, error) {
+func Load(typeLog string, envManager file.EnvFile) (Config, error) {
 	var err_s []error
 
 	appConfig, errApp := LoadAppConfig(envManager)
@@ -41,7 +41,7 @@ func Load(typeLog string, targetLoader file.TargetLoader, envManager file.EnvFil
 		err_s = append(err_s, errDiscord)
 	}
 
-	monitorConfig, errMonitor := LoadMonitorConfig(targetLoader, envManager)
+	monitorConfig, errMonitor := LoadMonitorConfig(envManager)
 	if errMonitor != nil {
 		err_s = append(err_s, errMonitor)
 	}
