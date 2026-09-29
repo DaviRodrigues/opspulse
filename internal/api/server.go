@@ -58,21 +58,17 @@ func (s *Server) SetConfigures(loggerManager *slog.Logger) {
 func (s *Server) Setup(ctx context.Context) error {
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go( func() {
 		slog.Info("Starting API server...", "port", s.serverConfig.Port)
 		if err := s.managerHttp.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("Server failed to start", "error", err)
 			os.Exit(1)
 		}
-	}()
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		s.StartMonitoring(ctx)
-	}()
+	})
 
 	<-ctx.Done()
 	slog.Info("Shutdown signal received, starting graceful teardown...")
