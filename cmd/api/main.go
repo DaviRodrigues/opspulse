@@ -24,7 +24,6 @@ func main() {
 	envFile := file.NewEnvFile()
 	cfg, err := config.Load(
 		config.API,
-		&file.JSONFile{},
 		envFile,
 	)
 	if err != nil {
