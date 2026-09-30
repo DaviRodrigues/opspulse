@@ -17,7 +17,12 @@ type ServerConfig struct {
 func LoadServerConfig(envManager file.EnvFile) (ServerConfig, error) {
 	var err_s []error
 
-	port, err := envManager.LoadVariable("SERVER_PORT", "3333")
+	fallbackPort := "3333"
+	if p, err := envManager.LoadVariable("PORT", ""); err == nil && p != "" {
+		fallbackPort = p
+	}
+
+	port, err := envManager.LoadVariable("SERVER_PORT", fallbackPort)
 	if err != nil {
 		err_s = append(err_s, err)
 	}
