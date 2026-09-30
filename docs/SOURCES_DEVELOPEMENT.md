@@ -1,4 +1,3 @@
-
 # Fontes e Referências de Desenvolvimento — OpsPulse
 
 Este documento reúne os materiais técnicos, guias oficiais, especificações e artigos de referência que embasam a arquitetura, o design de código e a infraestrutura do **OpsPulse**.
@@ -66,3 +65,4 @@ Estratégias de empacotamento, cache de dependências, builds multi-estágio e p
 | **The Twelve-Factor App**     | Metodologia clássica para construir aplicações modernas, escaláveis e configuráveis via variáveis de ambiente. | [12factor.net/pt_br](https://12factor.net/pt_br/)                      |
 | **DiscordGo Library**         | SDK Go oficial da comunidade para integração com a API e Gateway WebSocket do Discord.                             | [github.com/bwmarrin/discordgo](https://github.com/bwmarrin/discordgo) |
 | **Log/Slog Standard Library** | Documentação do pacote nativo de structured logging (`log/slog`) introduzido no Go 1.21.                         | [pkg.go.dev/log/slog](https://pkg.go.dev/log/slog)                     |
+| **Go-yaml Library**           | Documentação do pacote de yaml.                                                                                    | [https://github.com/yaml/go-yaml](https://github.com/yaml/go-yaml)                     |
