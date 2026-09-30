@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/DaviRodrigues/opspulse/internal/config"
-	"github.com/joho/godotenv"
+	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
 func TestBot_Validation(t *testing.T) {
@@ -17,7 +17,7 @@ func TestBot_Validation(t *testing.T) {
 
 func TestBot_Integration(t *testing.T) {
 	// Caso queira testar, o ideal é colocar .env na raiz do módulo discord
-	_ = godotenv.Load()
+	_ = file.NewEnvFile()
 	token := os.Getenv("DISCORD_TOKEN")
 	channelID := os.Getenv("DISCORD_CHANNEL_ID")
 	if token == "" {
@@ -28,9 +28,9 @@ func TestBot_Integration(t *testing.T) {
 	}
 
 	bot, err := New(&config.DiscordConfig{
-		Token: token,
+		Token:     token,
 		ChannelID: channelID,
-		GuildID: "",
+		GuildID:   "",
 	})
 	if err != nil {
 		t.Fatalf("falha ao conectar ao discord: %v", err)

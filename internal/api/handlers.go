@@ -3,7 +3,6 @@ package api
 import (
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
@@ -20,18 +19,6 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w, http.StatusOK, map[string]string{
 		"status": "OK",
 	})
-}
-
-func (s *Server) handleHTMLBroker(w http.ResponseWriter, r *http.Request) {
-	paths := []string{"web/index.html", "./web/index.html", "../web/index.html"}
-	for _, p := range paths {
-		if _, err := os.Stat(p); err == nil {
-			http.ServeFile(w, r, p)
-			return
-		}
-	}
-
-	http.Error(w, "Dashboard HTML não encontrado na pasta web/", http.StatusNotFound)
 }
 
 func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +44,7 @@ func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				continue
 			}
-			slog.Info("Event ", "data", event)
+			slog.Debug("Event ", "data", event)
 			w.Write(data)
 			flusher.Flush()
 		case <-heartbeat.C:

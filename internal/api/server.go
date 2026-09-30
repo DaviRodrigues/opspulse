@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -58,7 +57,7 @@ func (s *Server) SetConfigures(loggerManager *slog.Logger) {
 func (s *Server) Setup(ctx context.Context) error {
 	var wg sync.WaitGroup
 
-	wg.Go( func() {
+	wg.Go(func() {
 		slog.Info("Starting API server...", "port", s.serverConfig.Port)
 		if err := s.managerHttp.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("Server failed to start", "error", err)
@@ -94,7 +93,6 @@ func (s *Server) Setup(ctx context.Context) error {
 
 func (s *Server) StartMonitoring(ctx context.Context) {
 	interval := s.monitorConfig.Interval
-	fmt.Printf("INTERVAL %v", interval)
 	if interval <= 0 {
 		interval = 30 * time.Second
 	}

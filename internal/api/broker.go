@@ -40,7 +40,7 @@ func (b *EventBroker) run() {
 		select {
 		case client := <-b.register:
 			b.clients[client] = true
-			slog.Info("Client connected. Total clients: ", "total", len(b.clients))
+			slog.Debug("Client connected. Total clients: ", "total", len(b.clients))
 
 			if b.lastEvent != nil {
 				client <- *b.lastEvent
