@@ -56,10 +56,10 @@ func checkURL(ctx context.Context, target file.Target) CheckResult {
 	if err != nil {
 		slog.Debug(fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()))
 		return CheckResult{
-			Name:       target.Name,
-			IsUp:       false,
-			Error:      fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()),
-			URL:        target.URL,
+			Name:  target.Name,
+			IsUp:  false,
+			Error: fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()),
+			URL:   target.URL,
 		}
 	}
 
@@ -69,20 +69,27 @@ func checkURL(ctx context.Context, target file.Target) CheckResult {
 	if err != nil {
 		slog.Debug(fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()))
 		return CheckResult{
-			Name:       target.Name,
-			IsUp:       false,
-			Error:      fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()),
-			Latency:    time.Since(start),
-			URL:        target.URL,
+			Name:    target.Name,
+			IsUp:    false,
+			Error:   fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()),
+			Latency: time.Since(start),
+			URL:     target.URL,
 		}
 	}
 	defer resp.Body.Close()
 
-	isUp := slices.Contains(target.ExpectedStatus, resp.StatusCode)
+	isUp := false
+	if len(target.ExpectedStatus) > 0 {
+		isUp = slices.Contains(target.ExpectedStatus, resp.StatusCode)
+	} else {
+		isUp = resp.StatusCode >= 200 && resp.StatusCode < 400
+	}
+
 	var errMsg string
 	if !isUp {
 		errMsg = fmt.Sprintf("status HTTP inesperado: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
+	
 	return CheckResult{
 		Name:       target.Name,
 		URL:        target.URL,

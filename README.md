@@ -92,3 +92,30 @@ docker compose -f deployments/compose.dev.yml --profile api --profile app up
 ```bash
 go test -v -race ./...
 ```
+
+---
+
+## Licença
+
+Copyright (c) 2026 **Davi Rodrigues**. Todos os direitos reservados.
+
+Este projeto é licenciado sob os termos da **Apache License 2.0**.
+
+### Resumo / Summary
+
+Este software é livre e está disponível para uso comercial e não comercial, sujeito aos termos da **Apache License, Version 2.0**.
+
+**Você pode:**
+- **Usar** o software para fins comerciais e não comerciais.
+- **Inspecionar e estudar** o código-fonte.
+- **Modificar** o software.
+- **Criar trabalhos derivados** baseados no projeto.
+- **Redistribuir** o software original e modificações permitidas.
+
+**Você deve:**
+- **Preservar** os avisos originais de direitos autorais (*Copyright*) e a cópia da licença.
+- **Documentar** alterações relevantes feitas nos arquivos modificados.
+
+Consulte os termos legais completos no arquivo [`LICENSE`](LICENSE).
+
+> *Este resumo é fornecido para fins informativos e de conveniência, não substituindo o texto integral da licença oficial.*
