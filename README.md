@@ -55,7 +55,14 @@ cp .env.example .env
 # Edite o .env com seu DISCORD_TOKEN, DISCORD_CHANNEL_ID e TARGET_URLS
 ```
 
-### 2. Rodar Localment com Go ou Docker
+### 2. Configurar Arquivo de Target
+
+```bash
+cp .target_example(.json ou .yaml) .target(.json ou .yaml)
+# Edite o arquivo e coloque os serviços com as configurações
+```
+
+### 3. Rodar com Go ou Docker
 
 ```bash
 # Golang
@@ -75,7 +82,7 @@ docker compose -f deployments/compose.dev.yml --profile app up
 docker compose -f deployments/compose.dev.yml --profile api --profile app up
 ```
 
-### 3. Rodar Suíte de Testes
+### 4. Rodar Suíte de Testes
 
 ```bash
 go test -v -race ./...
@@ -94,6 +101,7 @@ Este projeto é licenciado sob os termos da **Apache License 2.0**.
 Este software é livre e está disponível para uso comercial e não comercial, sujeito aos termos da **Apache License, Version 2.0**.
 
 **Você pode:**
+
 - **Usar** o software para fins comerciais e não comerciais.
 - **Inspecionar e estudar** o código-fonte.
 - **Modificar** o software.
@@ -101,6 +109,7 @@ Este software é livre e está disponível para uso comercial e não comercial, 
 - **Redistribuir** o software original e modificações permitidas.
 
 **Você deve:**
+
 - **Preservar** os avisos originais de direitos autorais (*Copyright*) e a cópia da licença.
 - **Documentar** alterações relevantes feitas nos arquivos modificados.
 
