@@ -6,7 +6,7 @@
 
 ## Tecnologias & Padrões
 
-- **Linguagem:** Go (Golang 1.24+)
+- **Linguagem:** Go (Golang 1.26+)
 - **Concorrência:** Goroutines, Channels com buffer, `sync.WaitGroup`, `time.Ticker` e Non-blocking Select.
 - **Comunicação / ChatOps:** Discord API (`discordgo`), Embeds ricos, Slash Commands (`/status`) e Botões Interativos (🔄 "Checar Novamente").
 - **Observabilidade:** Structured Logging com `log/slog` nativo e rotação de logs diários.
