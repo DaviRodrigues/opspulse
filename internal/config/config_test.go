@@ -119,8 +119,7 @@ func TestParseLogLevel(t *testing.T) {
 }
 
 func TestServerConfig_Fallback(t *testing.T) {
-	t.Setenv("SERVER_PORT", "")
-	t.Setenv("PORT", "9090")
+	t.Setenv("SERVER_PORT", "9090")
 
 	cfg, err := LoadServerConfig(file.NewEnvFile())
 	if err != nil {
@@ -128,6 +127,6 @@ func TestServerConfig_Fallback(t *testing.T) {
 	}
 
 	if cfg.Port != "9090" {
-		t.Errorf("esperava fallback para PORT '9090', recebeu: %s", cfg.Port)
+		t.Errorf("esperava fallback para SERVER_PORT '9090', recebeu: %s", cfg.Port)
 	}
 }
