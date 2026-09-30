@@ -1,0 +1,35 @@
+services:
+  app:
+    build:
+      context: ../
+      dockerfile: ./build/package/Dockerfile.prod
+      args:
+        TARGET_BIN: opspulse
+    container_name: opspulse-app
+    profiles:
+      - app
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    working_dir: /app
+    volumes:
+      - ./log:/app/log
+      - ./target:/app/target
+
+  api:
+    build:
+      context: ../
+      dockerfile: ./build/package/Dockerfile.prod
+      args:
+        TARGET_BIN: opspulse
+    container_name: opspulse-api
+    profiles:
+      - api
+    restart: unless-stopped
+    ports:
+      - 3333:3333
+    env_file:
+      - ../.env
+    volumes:
+      - ./log:/api/log
+      - ./target:/api/target
