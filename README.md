@@ -1,14 +1,6 @@
-# OpsPulse — ChatOps & Infra Health Check Bot
+# OpsPulse - ChatOps & Infra Health Check Bot
 
-**OpsPulse** é uma solução de monitoramento de infraestrutura e ChatOps desenvolvida em **Go**, projetada para verificar a saúde de serviços concorrentemente e despachar alertas e relatórios interativos para o **Discord**, contando com uma esteira completa de automação **DevOps (Docker, GitHub Actions e Terraform)**.
-
----
-
-## Documentação do Projeto
-
-- **[Plano de Projeto &amp; Roadmap por Fases (docs/PROJECT_PLAN.md)](docs/PROJECT_PLAN.md)**: Detalhamento da arquitetura, status do MVP e pacotes de evolução pós-MVP.
-- **[Banco de Ideias de Projetos Futuros (docs/ideas/other_projects_ideas.md)](docs/ideas/other_projects_ideas.md)**: Ideias salvas para implementação futura.
-- **[Workflow de desenvolvimento do projeto (docs/DEVELOPMENT_WORKFLOW.md)](docs/DEVELOPMENT_WORKFLOW.md)**: Workflow explicativo de como estou desenvolvendo o projeto.
+**OpsPulse** é uma solução de monitoramento de infraestrutura e ChatOps , projetada para verificar a saúde de serviços concorrentemente e despachar alertas e relatórios interativos para o **Discord** e através de uma **API com interface web**, contando com uma esteira completa de automação **DevOps (Docker, GitHub Actions e Terraform)**.
 
 ---
 
@@ -18,7 +10,7 @@
 - **Concorrência:** Goroutines, Channels com buffer, `sync.WaitGroup`, `time.Ticker` e Non-blocking Select.
 - **Comunicação / ChatOps:** Discord API (`discordgo`), Embeds ricos, Slash Commands (`/status`) e Botões Interativos (🔄 "Checar Novamente").
 - **Observabilidade:** Structured Logging com `log/slog` nativo e rotação de logs diários.
-- **Containerização:** Docker (Multi-stage build gerando imagem < 20MB) e Docker Compose.
+- **Containerização:** Docker (Multi-stage build) e Docker Compose.
 - **CI/CD:** GitHub Actions com testes automatizados, race detector, linters e releases multi-plataforma.
 - **Infraestrutura como Código (IaC):** Terraform para provisionamento de nuvem.
 
@@ -41,12 +33,12 @@
 
 As futuras atualizações estão estruturadas em pacotes modulares independentes:
 
-- **Pacote 1 — Targets Ricos (JSON/YAML):** Suporte a arquivos de configuração com validação de status HTTP customizado, headers personalizados (`Authorization`), métodos `POST`/`PUT` e validação de body/payload (regex e JSON match).
-- **Pacote 2 — Plataforma Multi-Notificadores:** Adição de **Slack** (Block Kit), **Telegram**, **Email** (SMTP/SES) e **Microsoft Teams** através do padrão _Factory/Composite Notifier_.
-- **Pacote 3 — Persistência NoSQL & Métricas de SLA:** Armazenamento de histórico de quedas e tempos de resposta em banco NoSQL (MongoDB, Redis ou SQLite), cálculo de uptime/SLA e threshold anti-flapping (evita falsos positivos).
-- **Pacote 4 — API REST & Dashboard Web:** Endpoints REST para cadastro de URLs em runtime sem reiniciar o container, e dashboard web com gráficos de latência em tempo real.
-- **Pacote 5 — Arquitetura de Microserviços & Mensageria:** Desacoplamento entre o motor de checagem e os notificadores usando filas assíncronas (NATS, RabbitMQ ou Redis Streams).
-- **Pacote 6 — Observabilidade Avançada & SSL Watchdog:** Exportador de métricas para **Prometheus / Grafana** e alertas antecipados de expiração de certificados SSL/TLS (HTTPS).
+- **Pacote 1 - Targets Ricos (JSON/YAML):** Suporte a arquivos de configuração com validação de status HTTP customizado, headers personalizados (`Authorization`), métodos `POST`/`PUT` e validação de body/payload (regex e JSON match). **(Implementado)**
+- **Pacote 2 - Plataforma Multi-Notificadores:** Adição de **Slack** (Block Kit), **Telegram**, **Email** (SMTP/SES) e **Microsoft Teams** através do padrão _Factory/Composite Notifier_. **(Não iniciado)**
+- **Pacote 3 - Persistência NoSQL & Métricas de SLA:** Armazenamento de histórico de quedas e tempos de resposta em banco NoSQL (MongoDB, Redis ou SQLite), cálculo de uptime/SLA e threshold anti-flapping (evita falsos positivos). **(Em andamento)**
+- **Pacote 4 - API REST & Dashboard Web:** Endpoints REST para cadastro de URLs em runtime sem reiniciar o container, e dashboard web com gráficos de latência em tempo real. **(Em andamento)**
+- **Pacote 5 - Arquitetura de Microserviços & Mensageria:** Desacoplamento entre o motor de checagem e os notificadores usando filas assíncronas (NATS, RabbitMQ ou Redis Streams). **(Não iniciado)**
+- **Pacote 6 - Observabilidade Avançada & SSL Watchdog:** Exportador de métricas para **Prometheus / Grafana** e alertas antecipados de expiração de certificados SSL/TLS (HTTPS). **(Não iniciado)**
 
 ---
 
@@ -54,7 +46,7 @@ As futuras atualizações estão estruturadas em pacotes modulares independentes
 
 ### Pré-requisitos
 
-- Go 1.24+ ou Docker
+- Go 1.26+ ou Docker
 
 ### 1. Clonar e Configurar Variáveis
 
@@ -63,28 +55,27 @@ cp .env.example .env
 # Edite o .env com seu DISCORD_TOKEN, DISCORD_CHANNEL_ID e TARGET_URLS
 ```
 
-### 2. Rodar com Go Local (opcional)
+### 2. Rodar Localment com Go ou Docker
 
 ```bash
+# Golang
 go run ./cmd/opspulse
 
 go run ./cmd/api
-```
 
-### 3. Rodar com Docker Compose
-
-```bash
-# APP
-docker compose -f deployments/compose.dev.yml --profile api up
+# Docker
 
 # API
+docker compose -f deployments/compose.dev.yml --profile api up
+
+# APP
 docker compose -f deployments/compose.dev.yml --profile app up
 
 # APP e API ao mesmo tempo
 docker compose -f deployments/compose.dev.yml --profile api --profile app up
 ```
 
-### 4. Rodar Suíte de Testes
+### 3. Rodar Suíte de Testes
 
 ```bash
 go test -v -race ./...
