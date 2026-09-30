@@ -21,7 +21,7 @@ services:
       context: ../
       dockerfile: ./build/package/Dockerfile.prod
       args:
-        TARGET_BIN: opspulse
+        TARGET_BIN: api
     container_name: opspulse-api
     profiles:
       - api
@@ -33,3 +33,18 @@ services:
     volumes:
       - ./log:/api/log
       - ./target:/api/target
+
+  vite:
+    build:
+      context: ../web/opspulse-frontend
+      dockerfile: ../../build/package/vite/Dockerfile.prod
+    container_name: vite_app
+    profiles:
+      - api
+      - frontend
+    ports:
+      - "5174:5173"
+    volumes:
+      - /app/node_modules
+    environment:
+      - WATCHPACK_POLLING=true
