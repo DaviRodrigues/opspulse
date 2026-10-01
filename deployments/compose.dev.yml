@@ -6,6 +6,7 @@ services:
     container_name: opspulse-app
     profiles:
       - app
+      - dev
     restart: unless-stopped
     command: air -c .air.app.toml
     env_file:
@@ -24,6 +25,7 @@ services:
     container_name: opspulse-api
     profiles:
       - api
+      - dev
     restart: unless-stopped
     command: air -c .air.api.toml
     env_file:
@@ -43,6 +45,7 @@ services:
     profiles:
       - api
       - frontend
+      - dev
     ports:
       - "5174:5173"
     volumes:
