@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+}
+
+.live-dot {
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+body {
+  margin: 0;
+  background-color: #020617; /* slate-950 */
+  color: #f8fafc;
+}
+

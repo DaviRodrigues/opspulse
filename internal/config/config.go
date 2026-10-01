@@ -4,30 +4,44 @@ import (
 	"errors"
 
 	"github.com/DaviRodrigues/opspulse/internal/file"
-	"github.com/joho/godotenv"
 )
 
+// TODO: solução temporária não é ideal isso, antipattern
+var API = "API"
+var APP = "APP"
+
 type Config struct {
+	App     AppConfig
+	Log     LogConfig
 	Discord DiscordConfig
 	Monitor MonitorConfig
+	Server  ServerConfig
 }
 
-func Load(targetLoader file.TargetLoader, filenames ...string) (Config, error) {
-	_ = godotenv.Load(filenames...)
-	envManager := file.EnvFile{}
-
+func Load(typeLog string, envManager file.EnvFile) (Config, error) {
 	var err_s []error
-	checkInterval, err := envManager.LoadDurationEnv("CHECK_INTERVAL")
-	if err != nil {
-		err_s = append(err_s, err)
+
+	appConfig, errApp := LoadAppConfig(envManager)
+	if errApp != nil {
+		err_s = append(err_s, errApp)
 	}
 
-	discordConfig, errDiscord := loadDiscordConfig(envManager)
+	logConfig, errLog := LoadLogConfig(envManager, typeLog, "./log")
+	if errLog != nil {
+		err_s = append(err_s, errLog)
+	}
+
+	serverConfig, errServer := LoadServerConfig(envManager)
+	if errServer != nil {
+		err_s = append(err_s, errServer)
+	}
+
+	discordConfig, errDiscord := LoadDiscordConfig(envManager)
 	if errDiscord != nil {
 		err_s = append(err_s, errDiscord)
 	}
 
-	monitorConfig, errMonitor := loadMonitorConfig(targetLoader, checkInterval)
+	monitorConfig, errMonitor := LoadMonitorConfig(envManager)
 	if errMonitor != nil {
 		err_s = append(err_s, errMonitor)
 	}
@@ -37,7 +51,11 @@ func Load(targetLoader file.TargetLoader, filenames ...string) (Config, error) {
 	}
 
 	return Config{
+		App:     appConfig,
+		Log:     logConfig,
 		Monitor: monitorConfig,
 		Discord: discordConfig,
+		Server:  serverConfig,
 	}, nil
 }
+

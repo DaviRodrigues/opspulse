@@ -2,10 +2,10 @@
   {
     "name": "",
     "url": "",
-    "enabled": "",
+    "enabled": true,
     "method": "GET",
     "expected_status": [200, 201, 204],
-    "timeout": "5s",
+    "timeout": 5000000000,
     "headers": {},
     "body": {},
     "tags": [],
