@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Google (Saudável)",
+    "url": "https://www.google.com",
+    "expected_status": [200, 201, 204],
+    "enabled": true,
+    "timeout": 5000000000
+  },
+  {
+    "name": "GitHub (Saudável)",
+    "url": "https://github.com",
+    "expected_status": [200, 201, 204],
+    "enabled": true,
+    "timeout": 5000000000
+  }
+]
