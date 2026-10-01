@@ -14,7 +14,7 @@ git pull origin dev || true
 
 declare -a my_branches=(
   "feat/add_api_module_setup"
-  "feat/add_manager_db_storage"
+  "feat/add_manager_db_storage_metrics"
   "feat/multi_notifiers_channels"
   "feat/terraform_ci_cd_deploy"
 )
