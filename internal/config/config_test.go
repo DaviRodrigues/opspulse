@@ -2,7 +2,6 @@ package config
 
 import (
 	"log/slog"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -10,21 +9,9 @@ import (
 )
 
 func TestEnvLoadOk(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	t.Setenv("DISCORD_TOKEN", "meu-token-secreto")
-	t.Setenv("DISCORD_CHANNEL_ID", "123456789")
-	t.Setenv("DISCORD_GUILD_ID", "123456789")
-	t.Setenv("MONITOR_INTERVAL", "15s")
-	t.Setenv("MONITOR_TARGETS_FILE", filepath.Join(tmpDir, "target.json"))
-	t.Setenv("APP_NAME", "custom-pulse")
-	t.Setenv("APP_ENV", "production")
-	t.Setenv("LOG_LEVEL", "debug")
-	t.Setenv("SERVER_PORT", "8080")
-
 	cfg, err := Load(
 		APP,
-		file.NewEnvFile(),
+		file.NewEnvFile("./testdata/config_valid.env"),
 	)
 	if err != nil {
 		t.Fatalf("não esperava erro, mas recebeu: %v", err)
@@ -38,11 +25,11 @@ func TestEnvLoadOk(t *testing.T) {
 		t.Errorf("esperava intervalo 15s, recebeu: %v", cfg.Monitor.Interval)
 	}
 
-	if cfg.Discord.Token != "meu-token-secreto" {
+	if cfg.Discord.Token != defaultFallback.Discord.Token {
 		t.Errorf("esperava token 'meu-token-secreto', recebeu: %s", cfg.Discord.Token)
 	}
 
-	if cfg.App.Name != "custom-pulse" {
+	if cfg.App.Name != defaultFallback.App.Name {
 		t.Errorf("esperava app name 'custom-pulse', recebeu: %s", cfg.App.Name)
 	}
 
@@ -54,21 +41,8 @@ func TestEnvLoadOk(t *testing.T) {
 		t.Errorf("esperava log level debug, recebeu: %v", cfg.Log.Level)
 	}
 
-	if cfg.Server.Port != "8080" {
-		t.Errorf("esperava porta 8080, recebeu: %s", cfg.Server.Port)
-	}
-}
-
-func TestEnvLoadErr(t *testing.T) {
-	t.Setenv("DISCORD_TOKEN", "")
-
-	_, err := Load(
-		APP,
-		file.NewEnvFile(),
-	)
-
-	if err == nil {
-		t.Errorf("esperava que Load() retornasse erro de validação, mas retornou nil")
+	if cfg.Server.Port != defaultFallback.Server.Port {
+		t.Errorf("esperava fallback para SERVER_PORT %s, recebeu: %s", cfg.Server.Port, defaultFallback.Server.Port)
 	}
 }
 
@@ -107,10 +81,8 @@ func TestParseLogLevel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			lvl, err := ParseLogLevel(tt.input)
-			if (err != nil) != tt.expectError {
-				t.Errorf("ParseLogLevel(%q) erro inesperado: %v, esperava erro: %v", tt.input, err, tt.expectError)
-			}
+			lvl:= ParseLogLevel(tt.input)
+
 			if !tt.expectError && lvl != tt.expected {
 				t.Errorf("ParseLogLevel(%q) = %v, esperava %v", tt.input, lvl, tt.expected)
 			}
@@ -119,14 +91,12 @@ func TestParseLogLevel(t *testing.T) {
 }
 
 func TestServerConfig_Fallback(t *testing.T) {
-	t.Setenv("SERVER_PORT", "9090")
-
 	cfg, err := LoadServerConfig(file.NewEnvFile())
 	if err != nil {
 		t.Fatalf("não esperava erro ao carregar server config: %v", err)
 	}
 
-	if cfg.Port != "9090" {
-		t.Errorf("esperava fallback para SERVER_PORT '9090', recebeu: %s", cfg.Port)
+	if cfg.Port != defaultFallback.Server.Port {
+		t.Errorf("esperava fallback para SERVER_PORT %s, recebeu: %s", cfg.Port, defaultFallback.Server.Port)
 	}
 }

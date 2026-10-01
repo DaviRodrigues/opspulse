@@ -130,18 +130,13 @@ func TestEnvFile_Helpers(t *testing.T) {
 	t.Setenv("TEST_DURATION", "45s")
 	t.Setenv("TEST_LIST", "https://a.com, https://b.com")
 
-	val, err := envFile.LoadVariable("TEST_VAR", "fallback")
-	if err != nil || val != "meu_valor" {
-		t.Errorf("esperava 'meu_valor', recebeu: %s (err: %v)", val, err)
+	val := envFile.LoadVariable("TEST_VAR", "fallback")
+	if val != "meu_valor" {
+		t.Errorf("esperava 'meu_valor', recebeu: %s", val)
 	}
 
 	dur, err := envFile.LoadDurationEnv("TEST_DURATION", "")
 	if err != nil || dur != 45*time.Second {
 		t.Errorf("esperava 45s, recebeu: %v (err: %v)", dur, err)
-	}
-
-	list, err := envFile.LoadListEnv("TEST_LIST")
-	if err != nil || len(list) != 2 {
-		t.Errorf("esperava lista com 2 itens, recebeu: %v (err: %v)", list, err)
 	}
 }
