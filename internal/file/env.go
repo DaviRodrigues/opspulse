@@ -23,14 +23,15 @@ func NewEnvFile(filenames ...string) EnvFile {
 
 func (e *EnvFile) LoadVariable(envVariable string, fallback string) (string, error) {
 	value, exists := os.LookupEnv(envVariable)
-	if !exists || strings.TrimSpace(value) == "" {
-		if fallback != "" {
-			return fallback, nil
-		}
+	if !exists {
 		slog.Error("Variável não existe no .env",
 			"variable", envVariable,
 		)
 		return "", errs.ErrConfigNotFound
+	}
+
+	if strings.TrimSpace(value) == "" {
+		return fallback, nil
 	}
 
 	return value, nil
