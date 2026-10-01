@@ -1,4 +1,5 @@
 
+
 go-api:
 	go run cmd/api/main.go
 
@@ -9,7 +10,7 @@ test:
 	go test -v ./...
 
 sync-branches:
-	./scripts/merge.sh
+	bash ./scripts/merge.sh
 
 up-dev:
 	docker compose -f deployments/compose.dev.yml --profile dev up
