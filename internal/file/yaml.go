@@ -3,6 +3,7 @@ package file
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"go.yaml.in/yaml/v4"
 )
@@ -15,6 +16,12 @@ func (y *YAMLFile) Create() error {
 	data, err := yaml.Marshal(defaultTargets)
 	if err != nil {
 		return fmt.Errorf("falha ao serializar targets padrão: %w", err)
+	}
+
+	if dir := filepath.Dir(y.Path); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("falha ao criar diretório %s: %w", dir, err)
+		}
 	}
 
 	if err := os.WriteFile(y.Path, data, 0644); err != nil {

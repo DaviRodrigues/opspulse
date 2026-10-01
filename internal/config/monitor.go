@@ -17,15 +17,12 @@ type MonitorConfig struct {
 func LoadMonitorConfig(envManager file.EnvFile) (MonitorConfig, error) {
 	var err_s []error
 
-	checkInterval, err := envManager.LoadDurationEnv("MONITOR_INTERVAL", (5 * time.Minute).String())
+	checkInterval, err := envManager.LoadDurationEnv("MONITOR_INTERVAL", defaultFallback.Monitor.Interval.String())
 	if err != nil {
 		err_s = append(err_s, err)
 	}
 
-	pathTargetFile, err := envManager.LoadVariable("MONITOR_TARGETS_FILE", "./target/target.json")
-	if err != nil {
-		err_s = append(err_s, err)
-	}
+	pathTargetFile := envManager.LoadVariable("MONITOR_TARGETS_FILE", defaultTargetsFilePath)
 
 	loader, isValidFormat := file.GetLoaderByFile(pathTargetFile)
 	if !isValidFormat {
@@ -44,6 +41,6 @@ func LoadMonitorConfig(envManager file.EnvFile) (MonitorConfig, error) {
 	return MonitorConfig{
 		Interval:       checkInterval,
 		TargetURLs:     targetUrls,
-		AlertThreshold: 0,
+		AlertThreshold: defaultFallback.Monitor.AlertThreshold,
 	}, nil
 }

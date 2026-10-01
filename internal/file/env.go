@@ -21,52 +21,24 @@ func NewEnvFile(filenames ...string) EnvFile {
 	return EnvFile{}
 }
 
-func (e *EnvFile) LoadVariable(envVariable string, fallback string) (string, error) {
+func (e *EnvFile) LoadVariable(envVariable string, fallback string) (string) {
 	value, exists := os.LookupEnv(envVariable)
-	if !exists {
-		slog.Error("Variável não existe no .env",
+	if !exists || strings.TrimSpace(value) == "" {
+		slog.Warn("Variável não existe no .env carregando fallback",
 			"variable", envVariable,
+			"fallback", fallback,
 		)
-		return "", errs.ErrConfigNotFound
+		return fallback
 	}
 
-	if strings.TrimSpace(value) == "" {
-		return fallback, nil
-	}
-
-	return value, nil
-}
-
-func (e *EnvFile) LoadListEnv(envVariable string) ([]string, error) {
-	value, err := e.LoadVariable(
-		envVariable,
-		"https://github.com/, https://www.google.com/",
-	)
-	if err != nil {
-		return make([]string, 0), err
-	}
-
-	rawUrls := strings.Split(value, ",")
-
-	var cleanUrls []string
-	for _, u := range rawUrls {
-		trimmed := strings.TrimSpace(u)
-		if trimmed != "" {
-			cleanUrls = append(cleanUrls, trimmed)
-		}
-	}
-
-	return cleanUrls, nil
+	return value
 }
 
 func (e *EnvFile) LoadDurationEnv(envVariable string, fallback string) (time.Duration, error) {
-	value, err := e.LoadVariable(
+	value := e.LoadVariable(
 		envVariable,
 		fallback,
 	)
-	if err != nil {
-		return 0, err
-	}
 
 	interval, err := time.ParseDuration(value)
 	if err != nil {

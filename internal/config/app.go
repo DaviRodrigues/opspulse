@@ -21,15 +21,8 @@ func (a AppConfig) IsDevelopment() bool {
 }
 
 func LoadAppConfig(envManager file.EnvFile) (AppConfig, error) {
-	name, err := envManager.LoadVariable("APP_NAME", "opspulse")
-	if err != nil {
-		return AppConfig{}, err
-	}
-
-	env, err := envManager.LoadVariable("APP_ENV", "development")
-	if err != nil {
-		return AppConfig{}, err
-	}
+	name := envManager.LoadVariable("APP_NAME", defaultFallback.App.Name)
+	env := envManager.LoadVariable("APP_ENV", defaultFallback.App.Env)
 
 	return AppConfig{
 		Name: name,

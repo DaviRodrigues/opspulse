@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -9,54 +8,45 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
+// TODO: solução temporária não é ideal isso, antipattern
+var API = "API"
+var APP = "APP"
+
 type LogConfig struct {
 	Level     slog.Level
 	Format    string
 	OutputDir string
 }
 
-func ParseLogLevel(levelStr string) (slog.Level, error) {
+func ParseLogLevel(levelStr string) slog.Level {
 	switch strings.ToLower(strings.TrimSpace(levelStr)) {
 	case "debug":
-		return slog.LevelDebug, nil
+		return slog.LevelDebug
 	case "info", "":
-		return slog.LevelInfo, nil
+		return slog.LevelInfo
 	case "warn", "warning":
-		return slog.LevelWarn, nil
+		return slog.LevelWarn
 	case "error":
-		return slog.LevelError, nil
+		return slog.LevelError
 	default:
-		return slog.LevelInfo, fmt.Errorf("nível de log inválido: '%s' (use debug, info, warn ou error)", levelStr)
+		fmt.Printf("nível de log inválido: '%s' (use debug, info, warn ou error). Usando Info como fallback", levelStr)
+		return slog.LevelInfo
 	}
 }
 
 func LoadLogConfig(envManager file.EnvFile, typeLog string, defaultDir string) (LogConfig, error) {
-	var err_s []error
+	rawLevel := envManager.LoadVariable("LOG_LEVEL", defaultFallback.Log.Level.String())
 
-	rawLevel, err := envManager.LoadVariable("LOG_LEVEL", "info")
-	if err != nil {
-		err_s = append(err_s, err)
-	}
+	level := ParseLogLevel(rawLevel)
 
-	level, err := ParseLogLevel(rawLevel)
-	if err != nil {
-		err_s = append(err_s, err)
-	}
+	format := envManager.LoadVariable("LOG_FORMAT", defaultFallback.Log.Format)
 
-	format, err := envManager.LoadVariable("LOG_FORMAT", "json")
-	if err != nil {
-		err_s = append(err_s, err)
+	if defaultDir == "" {
+		defaultDir = defaultFallback.Log.OutputDir
 	}
 
 	// TODO: gambiarra essa forma de carregar o diretório, arrumar depois
-	outputDir, err := envManager.LoadVariable("LOG_OUTPUT_DIR_" + typeLog, defaultDir)
-	if err != nil {
-		err_s = append(err_s, err)
-	}
-
-	if len(err_s) > 0 {
-		return LogConfig{}, errors.Join(err_s...)
-	}
+	outputDir := envManager.LoadVariable("LOG_OUTPUT_DIR_"+typeLog, defaultDir)
 
 	return LogConfig{
 		Level:     level,
@@ -64,4 +54,3 @@ func LoadLogConfig(envManager file.EnvFile, typeLog string, defaultDir string) (
 		OutputDir: outputDir,
 	}, nil
 }
-

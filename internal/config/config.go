@@ -2,13 +2,40 @@ package config
 
 import (
 	"errors"
+	"log/slog"
+	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
-// TODO: solução temporária não é ideal isso, antipattern
-var API = "API"
-var APP = "APP"
+var defaultFallback = Config{
+	App: AppConfig{
+		Name: "opspulse",
+		Env:  "development",
+	},
+	Log: LogConfig{
+		Level:     slog.LevelInfo,
+		Format:    "json",
+		OutputDir: "./log",
+	},
+	Server: ServerConfig{
+		Port:            "3333",
+		ReadTimeout:     5 * time.Second,
+		WriteTimeout:    0,
+		ShutdownTimeout: 15 * time.Second,
+	},
+	Monitor: MonitorConfig{
+		Interval:       5 * time.Minute,
+		AlertThreshold: 0,
+	},
+	Discord: DiscordConfig{
+		Token:     "meu-token-secreto",
+		ChannelID: "123456789",
+		GuildID:   "123456789",
+	},
+}
+
+const defaultTargetsFilePath = "./target/target.json"
 
 type Config struct {
 	App     AppConfig
@@ -36,10 +63,7 @@ func Load(typeLog string, envManager file.EnvFile) (Config, error) {
 		err_s = append(err_s, errServer)
 	}
 
-	discordConfig, errDiscord := LoadDiscordConfig(envManager)
-	if errDiscord != nil {
-		err_s = append(err_s, errDiscord)
-	}
+	discordConfig := LoadDiscordConfig(envManager)
 
 	monitorConfig, errMonitor := LoadMonitorConfig(envManager)
 	if errMonitor != nil {
@@ -58,4 +82,3 @@ func Load(typeLog string, envManager file.EnvFile) (Config, error) {
 		Server:  serverConfig,
 	}, nil
 }
-

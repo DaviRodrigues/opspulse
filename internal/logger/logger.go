@@ -33,13 +33,18 @@ func SetupSlog(handler slog.Handler) (*slog.Logger, error) {
 	return logger, nil
 }
 
+/*
+TODO:
+Criar uma struct para abstrair as configurações do handler
+Fazer lógica para apenas a partir de determinado level do slog possa ativar AddSource
+*/
 func HandlerDefaultJSON(level slog.Level, logDir string) (slog.Handler, error) {
 	multiWriter, err := makePathLog(logDir)
 	if err != nil {
 		return nil, err
 	}
 
-	return slog.NewJSONHandler(multiWriter, &slog.HandlerOptions{Level: level}), nil
+	return slog.NewJSONHandler(multiWriter, &slog.HandlerOptions{Level: level, AddSource: true}), nil
 }
 
 func HandlerDefaultText(level slog.Level, logDir string) (slog.Handler, error) {
@@ -48,7 +53,7 @@ func HandlerDefaultText(level slog.Level, logDir string) (slog.Handler, error) {
 		return nil, err
 	}
 
-	return slog.NewTextHandler(multiWriter, &slog.HandlerOptions{Level: level}), nil
+	return slog.NewTextHandler(multiWriter, &slog.HandlerOptions{Level: level, AddSource: true}), nil
 }
 
 // InitLogger cria e configura o logger da aplicação com base nas configurações de App e Log.

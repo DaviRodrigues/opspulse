@@ -17,22 +17,19 @@ type ServerConfig struct {
 func LoadServerConfig(envManager file.EnvFile) (ServerConfig, error) {
 	var err_s []error
 
-	port, err := envManager.LoadVariable("SERVER_PORT", "3333")
+	port := envManager.LoadVariable("SERVER_PORT", defaultFallback.Server.Port)
+
+	readTimeout, err := envManager.LoadDurationEnv("SERVER_READ_TIMEOUT", defaultFallback.Server.ReadTimeout.String())
 	if err != nil {
 		err_s = append(err_s, err)
 	}
 
-	readTimeout, err := envManager.LoadDurationEnv("SERVER_READ_TIMEOUT", (5 * time.Second).String())
+	writeTimeout, err := envManager.LoadDurationEnv("SERVER_WRITE_TIMEOUT", defaultFallback.Server.WriteTimeout.String())
 	if err != nil {
 		err_s = append(err_s, err)
 	}
 
-	writeTimeout, err := envManager.LoadDurationEnv("SERVER_WRITE_TIMEOUT", (0 * time.Second).String())
-	if err != nil {
-		err_s = append(err_s, err)
-	}
-
-	shutdownTimeout, err := envManager.LoadDurationEnv("SERVER_SHUTDOWN_TIMEOUT", (15 * time.Second).String())
+	shutdownTimeout, err := envManager.LoadDurationEnv("SERVER_SHUTDOWN_TIMEOUT", defaultFallback.Server.ShutdownTimeout.String())
 	if err != nil {
 		err_s = append(err_s, err)
 	}

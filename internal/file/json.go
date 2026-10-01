@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 type JSONFile struct {
@@ -14,6 +15,12 @@ func (j *JSONFile) Create() error {
 	data, err := json.MarshalIndent(defaultTargets, "", "  ")
 	if err != nil {
 		return fmt.Errorf("falha ao serializar targets padrão: %w", err)
+	}
+
+	if dir := filepath.Dir(j.Path); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("falha ao criar diretório %s: %w", dir, err)
+		}
 	}
 
 	if err := os.WriteFile(j.Path, data, 0644); err != nil {
