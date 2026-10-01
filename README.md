@@ -1,77 +1,97 @@
-# 📡 OpsPulse — ChatOps & Infra Health Check Bot
+# OpsPulse - ChatOps & Infra Health Check Bot
 
-**OpsPulse** é uma solução de monitoramento de infraestrutura e ChatOps desenvolvida em **Go**, projetada para verificar a saúde de serviços concorrentemente e despachar alertas e relatórios interativos para o **Discord**, contando com uma esteira completa de automação **DevOps (Docker, GitHub Actions e Terraform)**.
-
----
-
-## 📚 Documentação do Projeto
-
-- 📖 **[Plano de Projeto & Roadmap por Fases (docs/PROJECT_PLAN.md)](docs/PROJECT_PLAN.md)**: Detalhamento da arquitetura, status do MVP e pacotes de evolução pós-MVP.
-- 💡 **[Banco de Ideias de Projetos Futuros (docs/ideas/other_projects_ideas.md)](docs/ideas/other_projects_ideas.md)**: Ideias salvas para implementação futura em Go ou Python.
+**OpsPulse** é uma solução de monitoramento de infraestrutura e ChatOps , projetada para verificar a saúde de serviços concorrentemente e despachar alertas e relatórios interativos para o **Discord** e através de uma **API com interface web**, contando com uma esteira completa de automação **DevOps (Docker, GitHub Actions e Terraform)**.
 
 ---
 
-## 🛠️ Tecnologias & Padrões
+## Tecnologias & Padrões
 
-- **Linguagem:** Go (Golang 1.24+)
+- **Linguagem:** Go (Golang 1.26+)
 - **Concorrência:** Goroutines, Channels com buffer, `sync.WaitGroup`, `time.Ticker` e Non-blocking Select.
 - **Comunicação / ChatOps:** Discord API (`discordgo`), Embeds ricos, Slash Commands (`/status`) e Botões Interativos (🔄 "Checar Novamente").
 - **Observabilidade:** Structured Logging com `log/slog` nativo e rotação de logs diários.
-- **Containerização:** Docker (Multi-stage build gerando imagem < 20MB) e Docker Compose.
+- **Containerização:** Docker (Multi-stage build) e Docker Compose.
 - **CI/CD:** GitHub Actions com testes automatizados, race detector, linters e releases multi-plataforma.
 - **Infraestrutura como Código (IaC):** Terraform para provisionamento de nuvem.
 
 ---
 
-## 🚀 Status do Projeto
+## Status do Projeto
 
-### 🎯 Fase MVP
+### Fase MVP
 
-- [x] **Fase 1:** Setup do Módulo, Structs de Dados e Health Checker Básico
-- [x] **Fase 2:** Concorrência, Goroutines, Channels, Tickers e Graceful Shutdown
-- [x] **Fase 3:** Configuração com Fallbacks, Structured Logging (`slog`) e Discord Bot Interativo
-- [x] **Fase 4:** Dockerfile Multi-stage otimizado e Docker Compose com volumes
-- [x] **Fase 5:** CI/CD Pipeline no GitHub Actions (Testes, Linters e Releases de Binários)
+- [X] **Fase 1:** Setup do Módulo, Structs de Dados e Health Checker Básico
+- [X] **Fase 2:** Concorrência, Goroutines, Channels, Tickers e Graceful Shutdown
+- [X] **Fase 3:** Configuração com Fallbacks, Structured Logging (`slog`) e Discord Bot Interativo
+- [X] **Fase 4:** Dockerfile Multi-stage otimizado e Docker Compose com volumes
+- [X] **Fase 5:** CI/CD Pipeline no GitHub Actions (Testes, Linters e Releases de Binários)
 - [ ] **Fase 6:** Infraestrutura como Código (IaC) com Terraform _(Em andamento)_
 
 ---
 
-## 🔮 Roadmap Pós-MVP (Evoluções em Pacotes)
+## Roadmap Pós-MVP (Evoluções em Pacotes)
 
 As futuras atualizações estão estruturadas em pacotes modulares independentes:
 
-- **📦 Pacote 1 — Targets Ricos (JSON/YAML):** Suporte a arquivos de configuração com validação de status HTTP customizado, headers personalizados (`Authorization`), métodos `POST`/`PUT` e validação de body/payload (regex e JSON match).
-- **📦 Pacote 2 — Plataforma Multi-Notificadores:** Adição de **Slack** (Block Kit), **Telegram**, **Email** (SMTP/SES) e **Microsoft Teams** através do padrão _Factory/Composite Notifier_.
-- **📦 Pacote 3 — Persistência NoSQL & Métricas de SLA:** Armazenamento de histórico de quedas e tempos de resposta em banco NoSQL (MongoDB, Redis ou SQLite), cálculo de uptime/SLA e threshold anti-flapping (evita falsos positivos).
-- **📦 Pacote 4 — API REST & Dashboard Web:** Endpoints REST para cadastro de URLs em runtime sem reiniciar o container, e dashboard web com gráficos de latência em tempo real.
-- **📦 Pacote 5 — Arquitetura de Microserviços & Mensageria:** Desacoplamento entre o motor de checagem e os notificadores usando filas assíncronas (NATS, RabbitMQ ou Redis Streams).
-- **📦 Pacote 6 — Observabilidade Avançada & SSL Watchdog:** Exportador de métricas para **Prometheus / Grafana** e alertas antecipados de expiração de certificados SSL/TLS (HTTPS).
+- **Pacote 1 - Targets Ricos (JSON/YAML):** Suporte a arquivos de configuração com validação de status HTTP customizado, headers personalizados (`Authorization`), métodos `POST`/`PUT` e validação de body/payload (regex e JSON match). **(Implementado)**
+- **Pacote 2 - Plataforma Multi-Notificadores:** Adição de **Slack** (Block Kit), **Telegram**, **Email** (SMTP/SES) e **Microsoft Teams** através do padrão _Factory/Composite Notifier_. **(Não iniciado)**
+- **Pacote 3 - Persistência NoSQL & Métricas de SLA:** Armazenamento de histórico de quedas e tempos de resposta em banco NoSQL (MongoDB, Redis ou SQLite), cálculo de uptime/SLA e threshold anti-flapping (evita falsos positivos). **(Em andamento)**
+- **Pacote 4 - API REST & Dashboard Web:** Endpoints REST para cadastro de URLs em runtime sem reiniciar o container, e dashboard web com gráficos de latência em tempo real. **(Em andamento)**
+- **Pacote 5 - Arquitetura de Microserviços & Mensageria:** Desacoplamento entre o motor de checagem e os notificadores usando filas assíncronas (NATS, RabbitMQ ou Redis Streams). **(Não iniciado)**
+- **Pacote 6 - Observabilidade Avançada & SSL Watchdog:** Exportador de métricas para **Prometheus / Grafana** e alertas antecipados de expiração de certificados SSL/TLS (HTTPS). **(Não iniciado)**
 
 ---
 
-## 💻 Como Rodar Localmente
+## Como Rodar
 
 ### Pré-requisitos
 
-- Go 1.24+ ou Docker
+- Go 1.26+ ou Docker
 
 ### 1. Clonar e Configurar Variáveis
 
+*Lembrete*: no opspulse/main.go você pode configurar o local e nome do .env na hora de carregar as configurações pelo parâmetro filenames.
+
 ```bash
 cp .env.example .env
-# Edite o .env com seu DISCORD_TOKEN, DISCORD_CHANNEL_ID e TARGET_URLS
+# Edite o .env com seu DISCORD_TOKEN, DISCORD_CHANNEL_ID e etc...
 ```
 
-### 2. Rodar com Go
+### 2. Configurar Target
+
+*Lembrete*: no opspulse/main.go você pode configurar o Target para carregar seu tipo de arquivo, pasta e nome.
 
 ```bash
+target.json
+target.yaml
+# Edite um dos arquivos com base no target_example de ambos
+```
+
+### 2. Configurar Arquivo de Target
+
+```bash
+cp .target_example(.json ou .yaml) .target(.json ou .yaml)
+# Edite o arquivo e coloque os serviços com as configurações
+```
+
+### 3. Rodar com Go ou Docker
+
+```bash
+# Golang
 go run ./cmd/opspulse
-```
 
-### 3. Rodar com Docker Compose
+go run ./cmd/api
 
-```bash
-docker compose up -d
+# Docker
+
+# API
+docker compose -f deployments/compose.dev.yml --profile api up
+
+# APP
+docker compose -f deployments/compose.dev.yml --profile app up
+
+# APP e API ao mesmo tempo
+docker compose -f deployments/compose.dev.yml --profile api --profile app up
 ```
 
 ### 4. Rodar Suíte de Testes
@@ -79,3 +99,32 @@ docker compose up -d
 ```bash
 go test -v -race ./...
 ```
+
+---
+
+## Licença
+
+Copyright (c) 2026 **Davi Rodrigues**. Todos os direitos reservados.
+
+Este projeto é licenciado sob os termos da **Apache License 2.0**.
+
+### Resumo / Summary
+
+Este software é livre e está disponível para uso comercial e não comercial, sujeito aos termos da **Apache License, Version 2.0**.
+
+**Você pode:**
+
+- **Usar** o software para fins comerciais e não comerciais.
+- **Inspecionar e estudar** o código-fonte.
+- **Modificar** o software.
+- **Criar trabalhos derivados** baseados no projeto.
+- **Redistribuir** o software original e modificações permitidas.
+
+**Você deve:**
+
+- **Preservar** os avisos originais de direitos autorais (*Copyright*) e a cópia da licença.
+- **Documentar** alterações relevantes feitas nos arquivos modificados.
+
+Consulte os termos legais completos no arquivo [`LICENSE`](LICENSE).
+
+> *Este resumo é fornecido para fins informativos e de conveniência, não substituindo o texto integral da licença oficial.*

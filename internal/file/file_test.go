@@ -9,10 +9,10 @@ import (
 
 func TestJSONFile_CreateAndLoad_Default(t *testing.T) {
 	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "target.json")
 	jsonFile := &JSONFile{
 		FileDefault: FileDefault{
-			Name: "targets.json",
-			Path: tmpDir,
+			Path: filePath,
 		},
 	}
 
@@ -57,8 +57,7 @@ func TestJSONFile_Load_CustomValid(t *testing.T) {
 
 	jsonFile := &JSONFile{
 		FileDefault: FileDefault{
-			Name: "custom.json",
-			Path: tmpDir,
+			Path: filePath,
 		},
 	}
 
@@ -94,8 +93,7 @@ func TestJSONFile_Validate_InvalidURL(t *testing.T) {
 
 	jsonFile := &JSONFile{
 		FileDefault: FileDefault{
-			Name: "invalid.json",
-			Path: tmpDir,
+			Path: filePath,
 		},
 	}
 
@@ -115,7 +113,6 @@ func TestJSONFile_Validate_Empty(t *testing.T) {
 
 	jsonFile := &JSONFile{
 		FileDefault: FileDefault{
-			Name: "empty.json",
 			Path: tmpDir,
 		},
 	}
@@ -138,7 +135,7 @@ func TestEnvFile_Helpers(t *testing.T) {
 		t.Errorf("esperava 'meu_valor', recebeu: %s (err: %v)", val, err)
 	}
 
-	dur, err := envFile.LoadDurationEnv("TEST_DURATION")
+	dur, err := envFile.LoadDurationEnv("TEST_DURATION", "")
 	if err != nil || dur != 45*time.Second {
 		t.Errorf("esperava 45s, recebeu: %v (err: %v)", dur, err)
 	}

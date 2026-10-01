@@ -95,7 +95,7 @@ func (b *Bot) Close() {
 func (b *Bot) SendAlert(result checker.CheckResult) error {
 	embed := createEmbed(result)
 
-	if result.Error != nil {
+	if result.Error != "" {
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
 			Name:   "Detalhe do Erro",
 			Value:  fmt.Sprintf("`%v`", result.Error),

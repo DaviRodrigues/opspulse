@@ -1,0 +1,55 @@
+services:
+  app:
+    build:
+      context: ../
+      dockerfile: ./build/package/go/Dockerfile.dev
+    container_name: opspulse-app
+    profiles:
+      - app
+    restart: unless-stopped
+    command: air -c .air.app.toml
+    env_file:
+      - ../.env
+    working_dir: /app
+    volumes:
+      - go-pkg-mod:/go/pkg/mod
+      - ..:/app
+
+  api:
+    build:
+      context: ../
+      dockerfile: ./build/package/go/Dockerfile.dev
+      args:
+        TARGET_AIR: -c .air.api.toml
+    container_name: opspulse-api
+    profiles:
+      - api
+    restart: unless-stopped
+    command: air -c .air.api.toml
+    env_file:
+      - ../.env
+    working_dir: /app
+    ports:
+      - 3333:3333
+    volumes:
+      - ..:/app
+      - go-pkg-mod:/go/pkg/mod
+
+  vite:
+    build:
+      context: ../web/opspulse-frontend
+      dockerfile: ../../build/package/vite/Dockerfile.dev
+    container_name: vite_app
+    profiles:
+      - api
+      - frontend
+    ports:
+      - "5174:5173"
+    volumes:
+      - ../web/opspulse-frontend:/app
+      - /app/node_modules
+    environment:
+      - WATCHPACK_POLLING=true
+
+volumes:
+  go-pkg-mod:

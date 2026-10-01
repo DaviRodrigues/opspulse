@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"sync"
 	"time"
 
@@ -21,12 +22,12 @@ Fazer uma forma de ter um checker pra UP constante ou de tempos em tempos altos,
 */
 
 type CheckResult struct {
-	Name       string
-	URL        string
-	StatusCode int
-	Latency    time.Duration
-	IsUp       bool
-	Error      error
+	Name       string        `json:"Name"`
+	URL        string        `json:"URL"`
+	StatusCode int           `json:"StatusCode"`
+	Latency    time.Duration `json:"Latency"`
+	IsUp       bool          `json:"IsUp"`
+	Error      string        `json:"Error,omitempty"`
 }
 
 // TODO: guardar para mais tarde no padrão strategy
@@ -53,13 +54,12 @@ func checkURL(ctx context.Context, target file.Target) CheckResult {
 		nil,
 	)
 	if err != nil {
+		slog.Debug(fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()))
 		return CheckResult{
-			Name:       target.Name,
-			IsUp:       false,
-			Error:      fmt.Errorf("%w (more info: %w)", errs.ErrServiceDown, err),
-			Latency:    0,
-			URL:        target.URL,
-			StatusCode: 0,
+			Name:  target.Name,
+			IsUp:  false,
+			Error: fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()),
+			URL:   target.URL,
 		}
 	}
 
@@ -67,24 +67,36 @@ func checkURL(ctx context.Context, target file.Target) CheckResult {
 	client := &http.Client{Timeout: target.Timeout}
 	resp, err := client.Do(req)
 	if err != nil {
+		slog.Debug(fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()))
 		return CheckResult{
-			Name:       target.Name,
-			IsUp:       false,
-			Error:      fmt.Errorf("%w (more info: %w)", errs.ErrServiceDown, err),
-			Latency:    time.Since(start),
-			URL:        target.URL,
-			StatusCode: 0,
+			Name:    target.Name,
+			IsUp:    false,
+			Error:   fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()),
+			Latency: time.Since(start),
+			URL:     target.URL,
 		}
 	}
 	defer resp.Body.Close()
 
+	isUp := false
+	if len(target.ExpectedStatus) > 0 {
+		isUp = slices.Contains(target.ExpectedStatus, resp.StatusCode)
+	} else {
+		isUp = resp.StatusCode >= 200 && resp.StatusCode < 400
+	}
+
+	var errMsg string
+	if !isUp {
+		errMsg = fmt.Sprintf("status HTTP inesperado: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+	}
+	
 	return CheckResult{
 		Name:       target.Name,
 		URL:        target.URL,
-		IsUp:       resp.StatusCode >= 200 && resp.StatusCode < 400,
+		IsUp:       isUp,
 		StatusCode: resp.StatusCode,
 		Latency:    time.Since(start),
-		Error:      nil,
+		Error:      errMsg,
 	}
 }
 
@@ -93,14 +105,11 @@ func CheckAll(ctx context.Context, targets []file.Target) []CheckResult {
 	resultsChan := make(chan CheckResult, len(targets))
 
 	for _, target := range targets {
-		wg.Add(1)
-
-		go func(t file.Target) {
-			defer wg.Done()
-			if t.Enabled {
-				resultsChan <- checkURL(ctx, t)
+		wg.Go(func() {
+			if target.Enabled {
+				resultsChan <- checkURL(ctx, target)
 			}
-		}(target)
+		})
 	}
 
 	wg.Wait()

@@ -1,0 +1,24 @@
+FROM golang:1.26.0-alpine AS builder
+
+ARG TARGET_BIN=opspulse
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -v -o /app/binary ./cmd/${TARGET_BIN}
+
+FROM alpine:latest AS runner
+
+WORKDIR /app
+
+RUN apk update && apk add --no-cache ca-certificates tzdata
+
+RUN update-ca-certificates
+
+COPY --from=builder /app/binary /app/binary
+
+ENTRYPOINT [ "/app/binary" ]
