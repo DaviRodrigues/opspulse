@@ -26,6 +26,7 @@ for b in "${my_branches[@]}"; do
     echo "⚠️ Conflito de merge detectado na branch $b! Resolva o conflito manualmente."
     exit 1
   fi
+  git checkout dev
 done
 
 git checkout "$CURRENT_BRANCH"
