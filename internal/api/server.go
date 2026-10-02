@@ -17,20 +17,35 @@ import (
 	slogchi "github.com/samber/slog-chi"
 )
 
+const scalarHTML = `<!doctype html>
+<html>
+  <head>
+    <title>OpsPulse - API Documentation</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <script
+      id="api-reference"
+      data-url="/docs/openapi.yaml"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>`
+
 type Server struct {
-	router        *chi.Mux
-	managerHttp   *http.Server
-	serverConfig  config.ServerConfig
-	monitorConfig config.MonitorConfig
-	broker        *EventBroker
+	Router       *chi.Mux
+	managerHttp  *http.Server
+	serverConfig config.ServerConfig
+	Broker       *EventBroker
 }
 
 func NewServer(ctx context.Context, serverCfg config.ServerConfig, monitorCfg config.MonitorConfig) *Server {
 	r := chi.NewRouter()
 	return &Server{
-		router:        r,
-		serverConfig:  serverCfg,
-		monitorConfig: monitorCfg,
+		Router: r,
 		managerHttp: &http.Server{
 			Addr:    ":" + serverCfg.Port,
 			Handler: r,
@@ -40,21 +55,22 @@ func NewServer(ctx context.Context, serverCfg config.ServerConfig, monitorCfg co
 			ReadTimeout:  serverCfg.ReadTimeout,
 			WriteTimeout: serverCfg.WriteTimeout, // 0 para SSE streaming contínuo
 		},
-		broker: NewCheckBroker(),
+		serverConfig: serverCfg,
+		Broker:       NewCheckBroker(),
 	}
 }
 
-func (s *Server) SetConfigures(loggerManager *slog.Logger) {
-	s.router.Use(slogchi.New(loggerManager))
-	s.router.Use(middleware.RequestID) // Injeta ID único para rastreamento de requests
-	s.router.Use(middleware.RealIP)    // Captura o IP real do cliente
-	s.router.Use(middleware.Logger)    // Log de requisições estruturado
-	s.router.Use(middleware.Recoverer) // Recupera de panics sem derrubar a API
+func (s *Server) SetConfigures(loggerManager *slog.Logger, monitorConfig config.MonitorConfig) {
+	s.Router.Use(slogchi.New(loggerManager))
+	s.Router.Use(middleware.RequestID) // Injeta ID único para rastreamento de requests
+	s.Router.Use(middleware.RealIP)    // Captura o IP real do cliente
+	s.Router.Use(middleware.Logger)    // Log de requisições estruturado
+	s.Router.Use(middleware.Recoverer) // Recupera de panics sem derrubar a API
 
-	s.registerRoutes()
+	s.registerRoutes(monitorConfig)
 }
 
-func (s *Server) Setup(ctx context.Context) error {
+func (s *Server) Setup(ctx context.Context, monitorConfig config.MonitorConfig) error {
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
@@ -66,7 +82,7 @@ func (s *Server) Setup(ctx context.Context) error {
 	})
 
 	wg.Go(func() {
-		s.StartMonitoring(ctx)
+		s.StartMonitoring(ctx, monitorConfig)
 	})
 
 	<-ctx.Done()
@@ -91,16 +107,16 @@ func (s *Server) Setup(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) StartMonitoring(ctx context.Context) {
-	interval := s.monitorConfig.Interval
+func (s *Server) StartMonitoring(ctx context.Context, monitorConfig config.MonitorConfig) {
+	interval := monitorConfig.Interval
 	if interval <= 0 {
 		interval = 30 * time.Second
 	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	event := NewStatusEvent(checker.CheckAll(ctx, s.monitorConfig.TargetURLs))
-	s.broker.Publish(event)
+	event := NewStatusEvent(checker.CheckAll(ctx, monitorConfig.TargetURLs))
+	s.Broker.Publish(event)
 
 	for {
 		select {
@@ -108,8 +124,25 @@ func (s *Server) StartMonitoring(ctx context.Context) {
 			slog.Info("🛑 Encerrando monitoramento da API de forma segura")
 			return
 		case <-ticker.C:
-			event := NewStatusEvent(checker.CheckAll(ctx, s.monitorConfig.TargetURLs))
-			s.broker.Publish(event)
+			event := NewStatusEvent(checker.CheckAll(ctx, monitorConfig.TargetURLs))
+			s.Broker.Publish(event)
 		}
 	}
+}
+
+func (s *Server) registerRoutes(monitorConfig config.MonitorConfig) {
+	s.Router.Route("/api/v1", func(r chi.Router) {
+		r.Get("/health", HandleHealth)
+
+		targetRoutes(r, s, monitorConfig.TargetURLs)
+	})
+
+	s.Router.Get("/docs/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "docs/openapi.yaml")
+	})
+
+		s.Router.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(scalarHTML))
+	})
 }

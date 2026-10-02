@@ -5,23 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
-func sendJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if data != nil {
-		_ = json.NewEncoder(w).Encode(data)
-	}
-}
-
-func sendError(w http.ResponseWriter, status int, message string) {
-	sendJSON(w, status, map[string]string{
-		"error": message,
-	})
-}
-
-func prepareSSE(w http.ResponseWriter) (http.Flusher, bool) {
+func PrepareSSE(w http.ResponseWriter) (http.Flusher, bool) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -36,7 +24,7 @@ func prepareSSE(w http.ResponseWriter) (http.Flusher, bool) {
 	return flusher, ok
 }
 
-func formatEvent(e Event) ([]byte, error) {
+func FormatEvent(e domain.Event) ([]byte, error) {
 	var sb strings.Builder
 
 	if e.ID != "" {

@@ -4,13 +4,15 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
 func TestEventBroker_RegisterAndPublish(t *testing.T) {
 	broker := NewCheckBroker()
 
-	client1 := make(chan Event, 10)
-	client2 := make(chan Event, 10)
+	client1 := make(chan domain.Event, 10)
+	client2 := make(chan domain.Event, 10)
 
 	broker.Register(client1)
 	broker.Register(client2)
@@ -18,7 +20,7 @@ func TestEventBroker_RegisterAndPublish(t *testing.T) {
 	// Pequeno sleep para a goroutine do broker processar os registros
 	time.Sleep(20 * time.Millisecond)
 
-	testEvent := Event{
+	testEvent := domain.Event{
 		ID:    "101",
 		Name:  "status",
 		Data:  map[string]string{"service": "auth-api", "status": "UP"},
@@ -48,14 +50,14 @@ func TestEventBroker_RegisterAndPublish(t *testing.T) {
 func TestEventBroker_UnRegister(t *testing.T) {
 	broker := NewCheckBroker()
 
-	client := make(chan Event, 10)
+	client := make(chan domain.Event, 10)
 	broker.Register(client)
 	time.Sleep(20 * time.Millisecond)
 
 	broker.UnRegister(client)
 	time.Sleep(20 * time.Millisecond)
 
-	broker.Publish(Event{Name: "alert", Data: "teste"})
+	broker.Publish(domain.Event{Name: "alert", Data: "teste"})
 
 	select {
 	case _, ok := <-client:
@@ -68,7 +70,7 @@ func TestEventBroker_UnRegister(t *testing.T) {
 }
 
 func TestFormatEvent(t *testing.T) {
-	event := Event{
+	event := domain.Event{
 		ID:    "99",
 		Name:  "status_update",
 		Retry: 5000,
@@ -78,7 +80,7 @@ func TestFormatEvent(t *testing.T) {
 		},
 	}
 
-	bytes, err := formatEvent(event)
+	bytes, err := FormatEvent(event)
 	if err != nil {
 		t.Fatalf("não esperava erro ao formatar evento, recebeu: %v", err)
 	}

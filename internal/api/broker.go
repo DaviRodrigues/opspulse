@@ -2,36 +2,38 @@ package api
 
 import (
 	"log/slog"
+
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
 type EventBroker struct {
-	clients    map[chan Event]bool
-	register   chan chan Event
-	unregister chan chan Event
-	publish    chan Event
-	lastEvent *Event
+	clients    map[chan domain.Event]bool
+	register   chan chan domain.Event
+	unregister chan chan domain.Event
+	publish    chan domain.Event
+	lastEvent  *domain.Event
 }
 
 func NewCheckBroker() *EventBroker {
 	b := &EventBroker{
-		clients:    make(map[chan Event]bool),
-		register:   make(chan chan Event),
-		unregister: make(chan chan Event),
-		publish:    make(chan Event, 100),
+		clients:    make(map[chan domain.Event]bool),
+		register:   make(chan chan domain.Event),
+		unregister: make(chan chan domain.Event),
+		publish:    make(chan domain.Event, 100),
 	}
 	go b.run()
 	return b
 }
 
-func (b *EventBroker) Publish(e Event) {
+func (b *EventBroker) Publish(e domain.Event) {
 	b.publish <- e
 }
 
-func (b *EventBroker) Register(client chan Event) {
+func (b *EventBroker) Register(client chan domain.Event) {
 	b.register <- client
 }
 
-func (b *EventBroker) UnRegister(client chan Event) {
+func (b *EventBroker) UnRegister(client chan domain.Event) {
 	b.unregister <- client
 }
 

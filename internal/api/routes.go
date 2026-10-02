@@ -1,15 +1,21 @@
 package api
 
 import (
+	"net/http"
+
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/go-chi/chi/v5"
 )
 
-func (s *Server) registerRoutes() {
-	s.router.Get("/health", s.handleHealth)
+func targetRoutes(r chi.Router, s *Server, t []domain.Target) {
+	r.Route("/targets", func(r chi.Router) {
+		r.Get("/status", func(w http.ResponseWriter, r *http.Request) {
+			// Mais pra frente remover a dependência de target e repassar ao banco
+			GetStatus(w, r, t)
+		})
 
-	s.router.Route("/api/v1", func(r chi.Router) {
-		r.Get("/status", s.getStatus)
-
-		r.Get("/events", s.handleSSE)
+		r.Get("/events", func(w http.ResponseWriter, r *http.Request) {
+			HandleSSE(w, r, s.Broker)
+		})
 	})
 }
