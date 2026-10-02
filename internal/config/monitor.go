@@ -4,13 +4,14 @@ import (
 	"errors"
 	"time"
 
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/DaviRodrigues/opspulse/internal/errs"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
 type MonitorConfig struct {
 	Interval       time.Duration
-	TargetURLs     []file.Target
+	TargetURLs     []domain.Target
 	AlertThreshold int
 }
 

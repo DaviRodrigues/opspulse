@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -13,7 +14,7 @@ type YAMLFile struct {
 }
 
 func (y *YAMLFile) Create() error {
-	data, err := yaml.Marshal(defaultTargets)
+	data, err := yaml.Marshal(domain.DefaultTargets)
 	if err != nil {
 		return fmt.Errorf("falha ao serializar targets padrão: %w", err)
 	}
@@ -31,6 +32,6 @@ func (y *YAMLFile) Create() error {
 	return nil
 }
 
-func (y *YAMLFile) Load() ([]Target, error) {
+func (y *YAMLFile) Load() ([]domain.Target, error) {
 	return y.FileDefault.Load(y.Create, yaml.Unmarshal)
 }

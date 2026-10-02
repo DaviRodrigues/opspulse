@@ -8,17 +8,19 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
 type UnmarshalFunc func(data []byte, v any) error
 type CreateFunc func() error
-type LoaderFactory func(path string) TargetLoader
+type LoaderFactory func(path string) Loader
 
 var loaderFactories = map[string]LoaderFactory{
-	"json": func(path string) TargetLoader {
+	"json": func(path string) Loader {
 		return &JSONFile{FileDefault: FileDefault{Path: path}}
 	},
-	"yaml": func(path string) TargetLoader {
+	"yaml": func(path string) Loader {
 		return &YAMLFile{FileDefault: FileDefault{Path: path}}
 	},
 }
@@ -27,7 +29,7 @@ type FileDefault struct {
 	Path string
 }
 
-func GetLoaderByFile(path string) (TargetLoader, bool) {
+func GetLoaderByFile(path string) (Loader, bool) {
 	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(path), "."))
 	factory, exists := loaderFactories[ext]
 	if !exists {
@@ -42,7 +44,7 @@ func (f *FileDefault) FileExists() bool {
 	return err == nil || !errors.Is(err, os.ErrNotExist)
 }
 
-func (f *FileDefault) Validate(targets []Target) error {
+func (f *FileDefault) Validate(targets []domain.Target) error {
 	if len(targets) == 0 {
 		return errors.New("o arquivo de targets está vazio ou não possui nenhum serviço configurado")
 	}
@@ -82,7 +84,7 @@ func (f *FileDefault) Validate(targets []Target) error {
 	return errors.Join(errs...)
 }
 
-func (f *FileDefault) Load(createFn CreateFunc, unmarshalFn UnmarshalFunc) ([]Target, error) {
+func (f *FileDefault) Load(createFn CreateFunc, unmarshalFn UnmarshalFunc) ([]domain.Target, error) {
 	if !f.FileExists() {
 		if err := createFn(); err != nil {
 			return nil, err
@@ -93,7 +95,7 @@ func (f *FileDefault) Load(createFn CreateFunc, unmarshalFn UnmarshalFunc) ([]Ta
 		return nil, fmt.Errorf("falha ao ler arquivo %s: %w", f.Path, err)
 	}
 
-	var targets []Target
+	var targets []domain.Target
 	if err := unmarshalFn(bytes, &targets); err != nil {
 		return nil, fmt.Errorf("erro de sintaxe no arquivo %s: %w", f.Path, err)
 	}

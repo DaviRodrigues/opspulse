@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
 type JSONFile struct {
@@ -12,7 +14,7 @@ type JSONFile struct {
 }
 
 func (j *JSONFile) Create() error {
-	data, err := json.MarshalIndent(defaultTargets, "", "  ")
+	data, err := json.MarshalIndent(domain.DefaultTargets, "", "  ")
 	if err != nil {
 		return fmt.Errorf("falha ao serializar targets padrão: %w", err)
 	}
@@ -30,6 +32,6 @@ func (j *JSONFile) Create() error {
 	return nil
 }
 
-func (j *JSONFile) Load() ([]Target, error) {
+func (j *JSONFile) Load() ([]domain.Target, error) {
 	return j.FileDefault.Load(j.Create, json.Unmarshal)
 }

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/file"
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
 func TestCheckURL(t *testing.T) {
@@ -55,7 +55,7 @@ func TestCheckURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := checkURL(
 				context.Background(),
-				file.Target{
+				domain.Target{
 					Name:    tt.name,
 					URL:     tt.url,
 					Enabled: true,
@@ -91,7 +91,7 @@ func TestCheckAll(t *testing.T) {
 
 	timeout := 5 * time.Second
 	enabled := true
-	targets := []file.Target{
+	targets := []domain.Target{
 		{URL: server1.URL, Enabled: enabled, Timeout: timeout},
 		{URL: server2.URL, Enabled: enabled, Timeout: timeout},
 		{URL: server3.URL, Enabled: enabled, Timeout: timeout},

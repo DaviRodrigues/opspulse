@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/config"
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/DaviRodrigues/opspulse/internal/errs"
-	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
 /*
@@ -40,10 +40,10 @@ type Notifier interface {
 }
 
 type ServiceChecker interface {
-	Check(ctx context.Context, t file.Target)
+	Check(ctx context.Context, t domain.Target)
 }
 
-func checkURL(ctx context.Context, target file.Target) CheckResult {
+func checkURL(ctx context.Context, target domain.Target) CheckResult {
 	reqCtx, cancel := context.WithTimeout(ctx, target.Timeout)
 	defer cancel()
 
@@ -89,7 +89,7 @@ func checkURL(ctx context.Context, target file.Target) CheckResult {
 	if !isUp {
 		errMsg = fmt.Sprintf("status HTTP inesperado: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
-	
+
 	return CheckResult{
 		Name:       target.Name,
 		URL:        target.URL,
@@ -100,7 +100,7 @@ func checkURL(ctx context.Context, target file.Target) CheckResult {
 	}
 }
 
-func CheckAll(ctx context.Context, targets []file.Target) []CheckResult {
+func CheckAll(ctx context.Context, targets []domain.Target) []CheckResult {
 	var wg sync.WaitGroup
 	resultsChan := make(chan CheckResult, len(targets))
 
