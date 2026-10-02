@@ -1,4 +1,5 @@
-
+api-docs:
+	apispec -o docs/openapi.yaml
 
 go-api:
 	go run cmd/api/main.go

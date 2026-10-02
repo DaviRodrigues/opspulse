@@ -1,0 +1,82 @@
+openapi: 3.1.1
+info:
+  title: Generated API
+  description: |2-
+
+    Copyright 2026 Ehab Terra. Licensed under the Apache License 2.0. See LICENSE and NOTICE.
+  version: 1.0.0
+  contact:
+    name: Ehab
+    url: https://ehabterra.github.io/
+    email: ehabterra@hotmail.com
+  license:
+    name: ""
+paths:
+  /api/v1/health:
+    get:
+      tags:
+        - /api/v1
+      operationId: github.com/DaviRodrigues/opspulse/internal/api.HandleHealth
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /api/v1/targets/events:
+    get:
+      tags:
+        - /api/v1/targets
+      operationId: github.com/DaviRodrigues/opspulse/internal/api.FuncLit:internal/api/routes.go:18:20
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                format: binary
+        "500":
+          description: Internal Server Error
+          content:
+            text/plain; charset=utf-8:
+              schema:
+                type: string
+  /api/v1/targets/status:
+    get:
+      tags:
+        - /api/v1/targets
+      operationId: github.com/DaviRodrigues/opspulse/internal/api.FuncLit:internal/api/routes.go:13:20
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/github_com_DaviRodrigues_opspulse_internal_checker_CheckResult'
+components:
+  schemas:
+    github_com_DaviRodrigues_opspulse_internal_checker_CheckResult:
+      type: object
+      properties:
+        Error:
+          type: string
+        IsUp:
+          type: boolean
+        Latency:
+          $ref: '#/components/schemas/time_Duration'
+        Name:
+          type: string
+        StatusCode:
+          type: integer
+        URL:
+          type: string
+    time_Duration:
+      type: object
+      description: 'External or unresolved type: time.Duration'
