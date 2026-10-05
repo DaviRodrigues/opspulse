@@ -33,16 +33,22 @@ var defaultFallback = Config{
 		ChannelID: "123456789",
 		GuildID:   "123456789",
 	},
+	Database: DatabaseConfig{
+		URI:     "mongodb://localhost:27017",
+		Name:    "opspulse",
+		Timeout: 5 * time.Second,
+	},
 }
 
 const defaultTargetsFilePath = "./target/target.json"
 
 type Config struct {
-	App     AppConfig
-	Log     LogConfig
-	Discord DiscordConfig
-	Monitor MonitorConfig
-	Server  ServerConfig
+	App      AppConfig
+	Log      LogConfig
+	Discord  DiscordConfig
+	Monitor  MonitorConfig
+	Server   ServerConfig
+	Database DatabaseConfig
 }
 
 func Load(typeLog string, envManager file.EnvFile) (Config, error) {
@@ -53,9 +59,11 @@ func Load(typeLog string, envManager file.EnvFile) (Config, error) {
 		err_s = append(err_s, errApp)
 	}
 
-	logConfig, errLog := LoadLogConfig(envManager, typeLog, "./log")
-	if errLog != nil {
-		err_s = append(err_s, errLog)
+	logConfig := LoadLogConfig(envManager, typeLog, "./log")
+
+	databaeConfig, errDB := LoadDatabaseConfig(envManager)
+	if errDB != nil {
+		err_s = append(err_s, errDB)
 	}
 
 	serverConfig, errServer := LoadServerConfig(envManager)
@@ -75,10 +83,11 @@ func Load(typeLog string, envManager file.EnvFile) (Config, error) {
 	}
 
 	return Config{
-		App:     appConfig,
-		Log:     logConfig,
-		Monitor: monitorConfig,
-		Discord: discordConfig,
-		Server:  serverConfig,
+		App:      appConfig,
+		Log:      logConfig,
+		Monitor:  monitorConfig,
+		Discord:  discordConfig,
+		Server:   serverConfig,
+		Database: databaeConfig,
 	}, nil
 }
