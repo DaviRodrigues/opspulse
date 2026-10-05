@@ -5,7 +5,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type CheckerFunc func() []domain.CheckLogs
+type CheckerFunc func() []domain.CheckLog
 
 func (b *Bot) RegisterHandlers(checkFn CheckerFunc) {
 	b.session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {

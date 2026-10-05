@@ -4,7 +4,7 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
-func NewStatusEvent(results []domain.CheckLogs) domain.Event {
+func NewStatusEvent(results []domain.CheckLog) domain.Event {
 	return domain.Event{
 		Name:  "status",
 		Data:  results,
@@ -12,7 +12,7 @@ func NewStatusEvent(results []domain.CheckLogs) domain.Event {
 	}
 }
 
-func NewAlertEvent(result domain.CheckLogs) domain.Event {
+func NewAlertEvent(result domain.CheckLog) domain.Event {
 	return domain.Event{
 		Name:  "alert",
 		Data:  result,

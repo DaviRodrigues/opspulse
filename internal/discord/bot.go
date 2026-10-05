@@ -76,7 +76,7 @@ func (b *Bot) Setup(ctx context.Context, cfg config.MonitorConfig) (chan struct{
 
 	// TODO: preciso melhorar a criação/registro dos handlers, ta muito acoplado com a função anônima
 	triggerChan := make(chan struct{}, 1)
-	b.RegisterHandlers(func() []domain.CheckLogs {
+	b.RegisterHandlers(func() []domain.CheckLog {
 		select {
 		case triggerChan <- struct{}{}:
 		default:
@@ -93,7 +93,7 @@ func (b *Bot) Close() {
 	b.session.Close()
 }
 
-func (b *Bot) SendAlert(result domain.CheckLogs) error {
+func (b *Bot) SendAlert(result domain.CheckLog) error {
 	embed := createEmbed(result)
 
 	if result.Error != "" {
