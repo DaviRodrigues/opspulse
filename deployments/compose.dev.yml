@@ -54,5 +54,35 @@ services:
     environment:
       - WATCHPACK_POLLING=true
 
+  mongodb:
+    image: mongo:7.0
+    container_name: opspulse-mongodb
+    profiles:
+      - api
+      - dev
+      - database
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=opspulse
+    volumes:
+      - mongodb-data:/data/db
+
+  mongoexpress:
+    image: mongo-express
+    ports:
+      - "8097:8081"
+    environment: 
+      - ME_CONFIG_MONGODB_URL=mongodb://mongodb:27017
+    depends_on:
+      - mongodb
+    restart: always
+    profiles:
+      - api
+      - dev
+      - database
+
 volumes:
   go-pkg-mod:
+  mongodb-data:

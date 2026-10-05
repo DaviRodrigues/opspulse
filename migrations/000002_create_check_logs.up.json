@@ -1,0 +1,11 @@
+[
+  {
+    "create": "check_logs",
+    "timeseries": {
+        "timeField": "checked_at",
+        "metaField": "target_id",
+        "granularity": "seconds"
+    },
+    "expireAfterSeconds": 2592000
+  }
+]

@@ -1,6 +1,9 @@
 api-docs:
 	apispec -o docs/openapi.yaml
 
+go-migrate:
+	go run cmd/database/main.go
+
 go-api:
 	go run cmd/api/main.go
 
