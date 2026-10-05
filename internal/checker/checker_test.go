@@ -102,7 +102,7 @@ func TestCheckAll(t *testing.T) {
 		t.Fatalf("esperava %d resultados, mas recebeu %d", len(targets), len(results))
 	}
 
-	resultsMap := make(map[string]CheckResult)
+	resultsMap := make(map[string]domain.CheckLogs)
 	for _, res := range results {
 		resultsMap[res.URL] = res
 	}

@@ -1,11 +1,10 @@
 package api
 
 import (
-	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
-func NewStatusEvent(results []checker.CheckResult) domain.Event {
+func NewStatusEvent(results []domain.CheckLogs) domain.Event {
 	return domain.Event{
 		Name:  "status",
 		Data:  results,
@@ -13,7 +12,7 @@ func NewStatusEvent(results []checker.CheckResult) domain.Event {
 	}
 }
 
-func NewAlertEvent(result checker.CheckResult) domain.Event {
+func NewAlertEvent(result domain.CheckLogs) domain.Event {
 	return domain.Event{
 		Name:  "alert",
 		Data:  result,

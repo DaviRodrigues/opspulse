@@ -14,36 +14,20 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/errs"
 )
 
-/*
-TODO: validar depois formas de enviar notificação por outros serviços email, slack e etc..
-Além disso, valdar de pegar outras informações fora o básico do healthcheck: headers, security, body e validar
-serviços tipo banco de dados etc...
-Fazer uma forma de ter um checker pra UP constante ou de tempos em tempos altos, o DOWN ainda é o mais importante
-*/
-
-type CheckResult struct {
-	Name       string        `json:"Name"`
-	URL        string        `json:"URL"`
-	StatusCode int           `json:"StatusCode"`
-	Latency    time.Duration `json:"Latency"`
-	IsUp       bool          `json:"IsUp"`
-	Error      string        `json:"Error,omitempty"`
-}
-
 // TODO: guardar para mais tarde no padrão strategy
 type HTTPChecker struct{}
 type TCPChecker struct{}
 type SSLChecker struct{}
 
 type Notifier interface {
-	SendAlert(result CheckResult) error
+	SendAlert(result domain.CheckLogs) error
 }
 
 type ServiceChecker interface {
 	Check(ctx context.Context, t domain.Target)
 }
 
-func checkURL(ctx context.Context, target domain.Target) CheckResult {
+func checkURL(ctx context.Context, target domain.Target) domain.CheckLogs {
 	reqCtx, cancel := context.WithTimeout(ctx, target.Timeout)
 	defer cancel()
 
@@ -55,7 +39,7 @@ func checkURL(ctx context.Context, target domain.Target) CheckResult {
 	)
 	if err != nil {
 		slog.Debug(fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()))
-		return CheckResult{
+		return domain.CheckLogs{
 			Name:  target.Name,
 			IsUp:  false,
 			Error: fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()),
@@ -68,7 +52,7 @@ func checkURL(ctx context.Context, target domain.Target) CheckResult {
 	resp, err := client.Do(req)
 	if err != nil {
 		slog.Debug(fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()))
-		return CheckResult{
+		return domain.CheckLogs{
 			Name:    target.Name,
 			IsUp:    false,
 			Error:   fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()),
@@ -90,7 +74,7 @@ func checkURL(ctx context.Context, target domain.Target) CheckResult {
 		errMsg = fmt.Sprintf("status HTTP inesperado: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 
-	return CheckResult{
+	return domain.CheckLogs{
 		Name:       target.Name,
 		URL:        target.URL,
 		IsUp:       isUp,
@@ -100,9 +84,9 @@ func checkURL(ctx context.Context, target domain.Target) CheckResult {
 	}
 }
 
-func CheckAll(ctx context.Context, targets []domain.Target) []CheckResult {
+func CheckAll(ctx context.Context, targets []domain.Target) []domain.CheckLogs {
 	var wg sync.WaitGroup
-	resultsChan := make(chan CheckResult, len(targets))
+	resultsChan := make(chan domain.CheckLogs, len(targets))
 
 	for _, target := range targets {
 		wg.Go(func() {
@@ -115,7 +99,7 @@ func CheckAll(ctx context.Context, targets []domain.Target) []CheckResult {
 	wg.Wait()
 	close(resultsChan)
 
-	var results []CheckResult
+	var results []domain.CheckLogs
 	for res := range resultsChan {
 		results = append(results, res)
 	}
@@ -154,7 +138,7 @@ func processMonitor(ctx context.Context, ntf Notifier, cfg config.MonitorConfig)
 	notifierProcess(ntf, results)
 }
 
-func notifierProcess(ntf Notifier, results []CheckResult) {
+func notifierProcess(ntf Notifier, results []domain.CheckLogs) {
 	if ntf == nil {
 		return
 	}
@@ -171,7 +155,7 @@ func notifierProcess(ntf Notifier, results []CheckResult) {
 	}
 }
 
-func printResults(results []CheckResult) {
+func printResults(results []domain.CheckLogs) {
 	fmt.Printf("\n--- Relatório de Saúde [%s] ---\n",
 		time.Now().Format("15:04:05"))
 	for _, res := range results {

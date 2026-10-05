@@ -9,6 +9,7 @@ import (
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/config"
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/DaviRodrigues/opspulse/internal/errs"
 	"github.com/bwmarrin/discordgo"
 )
@@ -75,7 +76,7 @@ func (b *Bot) Setup(ctx context.Context, cfg config.MonitorConfig) (chan struct{
 
 	// TODO: preciso melhorar a criação/registro dos handlers, ta muito acoplado com a função anônima
 	triggerChan := make(chan struct{}, 1)
-	b.RegisterHandlers(func() []checker.CheckResult {
+	b.RegisterHandlers(func() []domain.CheckLogs {
 		select {
 		case triggerChan <- struct{}{}:
 		default:
@@ -92,7 +93,7 @@ func (b *Bot) Close() {
 	b.session.Close()
 }
 
-func (b *Bot) SendAlert(result checker.CheckResult) error {
+func (b *Bot) SendAlert(result domain.CheckLogs) error {
 	embed := createEmbed(result)
 
 	if result.Error != "" {

@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/checker"
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/bwmarrin/discordgo"
 )
 
 func TestCreateEmbed_ColorsAndStatus(t *testing.T) {
-	upResult := checker.CheckResult{
+	upResult := domain.CheckLogs{
 		URL:        "https://api.exemplo.com",
 		IsUp:       true,
 		StatusCode: 200,
@@ -20,7 +20,7 @@ func TestCreateEmbed_ColorsAndStatus(t *testing.T) {
 		t.Errorf("esperava cor verde 0x2ECC71 para UP, recebeu: %x", embedUp.Color)
 	}
 
-	downResult := checker.CheckResult{
+	downResult := domain.CheckLogs{
 		URL:        "https://api.exemplo.com/erro",
 		IsUp:       false,
 		StatusCode: 500,

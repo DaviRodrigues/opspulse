@@ -1,11 +1,11 @@
 package discord
 
 import (
-	"github.com/DaviRodrigues/opspulse/internal/checker"
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/bwmarrin/discordgo"
 )
 
-type CheckerFunc func() []checker.CheckResult
+type CheckerFunc func() []domain.CheckLogs
 
 func (b *Bot) RegisterHandlers(checkFn CheckerFunc) {
 	b.session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {

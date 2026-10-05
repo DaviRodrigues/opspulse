@@ -34,7 +34,7 @@ func ParseLogLevel(levelStr string) slog.Level {
 	}
 }
 
-func LoadLogConfig(envManager file.EnvFile, typeLog string, defaultDir string) (LogConfig, error) {
+func LoadLogConfig(envManager file.EnvFile, typeLog string, defaultDir string) LogConfig {
 	rawLevel := envManager.LoadVariable("LOG_LEVEL", defaultFallback.Log.Level.String())
 
 	level := ParseLogLevel(rawLevel)
@@ -52,5 +52,5 @@ func LoadLogConfig(envManager file.EnvFile, typeLog string, defaultDir string) (
 		Level:     level,
 		Format:    strings.ToLower(strings.TrimSpace(format)),
 		OutputDir: outputDir,
-	}, nil
+	}
 }
