@@ -11,7 +11,6 @@ import (
 
 	"github.com/DaviRodrigues/opspulse/internal/config"
 	"github.com/DaviRodrigues/opspulse/internal/domain"
-	"github.com/DaviRodrigues/opspulse/internal/errs"
 )
 
 // TODO: guardar para mais tarde no padrão strategy
@@ -38,11 +37,11 @@ func checkURL(ctx context.Context, target domain.Target) domain.CheckLog {
 		nil,
 	)
 	if err != nil {
-		slog.Debug(fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()))
+		slog.Debug(fmt.Sprintf("%s (more info: %s)", domain.ErrServiceDown.Error(), err.Error()))
 		return domain.CheckLog{
 			Name:  target.Name,
 			IsUp:  false,
-			Error: fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()),
+			Error: fmt.Sprintf("%s (more info: %s)", domain.ErrServiceDown.Error(), err.Error()),
 			URL:   target.URL,
 		}
 	}
@@ -51,11 +50,11 @@ func checkURL(ctx context.Context, target domain.Target) domain.CheckLog {
 	client := &http.Client{Timeout: target.Timeout}
 	resp, err := client.Do(req)
 	if err != nil {
-		slog.Debug(fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()))
+		slog.Debug(fmt.Sprintf("%s (more info: %s)", domain.ErrServiceDown.Error(), err.Error()))
 		return domain.CheckLog{
 			Name:    target.Name,
 			IsUp:    false,
-			Error:   fmt.Sprintf("%s (more info: %s)", errs.ErrServiceDown.Error(), err.Error()),
+			Error:   fmt.Sprintf("%s (more info: %s)", domain.ErrServiceDown.Error(), err.Error()),
 			Latency: time.Since(start),
 			URL:     target.URL,
 		}

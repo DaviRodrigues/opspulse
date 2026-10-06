@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/domain"
-	"github.com/DaviRodrigues/opspulse/internal/errs"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
@@ -27,7 +26,7 @@ func LoadMonitorConfig(envManager file.EnvFile) (MonitorConfig, error) {
 
 	loader, isValidFormat := file.GetLoaderByFile(pathTargetFile)
 	if !isValidFormat {
-		err_s = append(err_s, errs.ErrInvalidFileFormat)
+		err_s = append(err_s, domain.ErrInvalidFileFormat)
 	}
 
 	targetUrls, err := loader.Load()

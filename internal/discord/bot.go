@@ -10,7 +10,6 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/config"
 	"github.com/DaviRodrigues/opspulse/internal/domain"
-	"github.com/DaviRodrigues/opspulse/internal/errs"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -23,11 +22,11 @@ func validateRequiredVariables(token, channelId string) error {
 	var errs_v []error
 
 	if strings.TrimSpace(token) == "" {
-		errs_v = append(errs_v, fmt.Errorf("Token %w", errs.ErrConfigNotFound))
+		errs_v = append(errs_v, fmt.Errorf("Token %w", domain.ErrConfigNotFound))
 	}
 
 	if strings.TrimSpace(channelId) == "" {
-		errs_v = append(errs_v, fmt.Errorf("Channel %w", errs.ErrConfigNotFound))
+		errs_v = append(errs_v, fmt.Errorf("Channel %w", domain.ErrConfigNotFound))
 	}
 
 	if len(errs_v) > 0 {
@@ -46,19 +45,19 @@ func New(cfgDiscord *config.DiscordConfig) (*Bot, error) {
 	dg, err := discordgo.New("Bot " + cfgDiscord.Token)
 	if err != nil {
 		slog.Error("Session Unavaible",
-			"errType", errs.ErrDiscordAuth,
+			"errType", domain.ErrDiscordAuth,
 			"error", err,
 		)
-		return nil, fmt.Errorf("%w session (more info: %w)", errs.ErrDiscordAuth, err)
+		return nil, fmt.Errorf("%w session (more info: %w)", domain.ErrDiscordAuth, err)
 	}
 
 	err = dg.Open()
 	if err != nil {
 		slog.Error("Connection Error",
-			"errType", errs.ErrDiscordAuth,
+			"errType", domain.ErrDiscordAuth,
 			"error", err,
 		)
-		return nil, fmt.Errorf("%w open conection (more info: %w)", errs.ErrDiscordAuth, err)
+		return nil, fmt.Errorf("%w open conection (more info: %w)", domain.ErrDiscordAuth, err)
 	}
 
 	slog.Info("Conexão com Discord estabelecida!")
