@@ -22,11 +22,11 @@ func validateRequiredVariables(token, channelId string) error {
 	var errs_v []error
 
 	if strings.TrimSpace(token) == "" {
-		errs_v = append(errs_v, fmt.Errorf("Token %w", domain.ErrConfigNotFound))
+		errs_v = append(errs_v, fmt.Errorf("Token %w", domain.ErrNotFound))
 	}
 
 	if strings.TrimSpace(channelId) == "" {
-		errs_v = append(errs_v, fmt.Errorf("Channel %w", domain.ErrConfigNotFound))
+		errs_v = append(errs_v, fmt.Errorf("Channel %w", domain.ErrNotFound))
 	}
 
 	if len(errs_v) > 0 {
