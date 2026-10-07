@@ -6,7 +6,7 @@ import { EventLog } from "@/components/EventLog";
 
 export function DashboardPage() {
   const { targets, status, lastUpdate, logs, clearLogs, stop, restart } =
-    useSSE("/api/v1/events");
+    useSSE("/api/v1/targets/events");
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased p-6">

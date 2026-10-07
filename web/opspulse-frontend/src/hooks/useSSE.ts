@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { CheckResult, ConnectionStatus, LogMessage } from "@/types/check";
 
-export function useSSE(endpoint = "/api/v1/events") {
+export function useSSE(endpoint = "/api/v1/targets/events") {
   const [targets, setTargets] = useState<CheckResult[]>([]);
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
