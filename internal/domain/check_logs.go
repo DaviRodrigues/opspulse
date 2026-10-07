@@ -25,5 +25,13 @@ type CheckLogs struct {
 	CheckedAt  time.Time     `json:"checked_at" bson:"checked_at"`
 }
 
-type CheckLog = CheckLogs
+type CheckResult struct {
+	Name       string        `json:"Name"`
+	URL        string        `json:"URL"`
+	StatusCode int           `json:"StatusCode"`
+	Latency    time.Duration `json:"Latency"`
+	IsUp       bool          `json:"IsUp"`
+	Error      string        `json:"Error,omitempty"`
+}
 
+type CheckLog = CheckLogs
