@@ -10,7 +10,7 @@ import (
 
 type MonitorConfig struct {
 	Interval       time.Duration
-	TargetURLs     []domain.Target
+	TargetURLs     []domain.TargetResult
 	AlertThreshold int
 }
 

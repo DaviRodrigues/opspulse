@@ -19,14 +19,14 @@ type TCPChecker struct{}
 type SSLChecker struct{}
 
 type Notifier interface {
-	SendAlert(result domain.CheckLog) error
+	SendAlert(result domain.CheckResult) error
 }
 
 type ServiceChecker interface {
-	Check(ctx context.Context, t domain.Target)
+	Check(ctx context.Context, t domain.TargetResult)
 }
 
-func checkURL(ctx context.Context, target domain.Target) domain.CheckLog {
+func checkURL(ctx context.Context, target domain.TargetResult) domain.CheckResult {
 	reqCtx, cancel := context.WithTimeout(ctx, target.Timeout)
 	defer cancel()
 
@@ -38,7 +38,7 @@ func checkURL(ctx context.Context, target domain.Target) domain.CheckLog {
 	)
 	if err != nil {
 		slog.Debug(fmt.Sprintf("%s (more info: %s)", domain.ErrServiceDown.Error(), err.Error()))
-		return domain.CheckLog{
+		return domain.CheckResult{
 			Name:  target.Name,
 			IsUp:  false,
 			Error: fmt.Sprintf("%s (more info: %s)", domain.ErrServiceDown.Error(), err.Error()),
@@ -51,7 +51,7 @@ func checkURL(ctx context.Context, target domain.Target) domain.CheckLog {
 	resp, err := client.Do(req)
 	if err != nil {
 		slog.Debug(fmt.Sprintf("%s (more info: %s)", domain.ErrServiceDown.Error(), err.Error()))
-		return domain.CheckLog{
+		return domain.CheckResult{
 			Name:    target.Name,
 			IsUp:    false,
 			Error:   fmt.Sprintf("%s (more info: %s)", domain.ErrServiceDown.Error(), err.Error()),
@@ -73,7 +73,7 @@ func checkURL(ctx context.Context, target domain.Target) domain.CheckLog {
 		errMsg = fmt.Sprintf("status HTTP inesperado: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 
-	return domain.CheckLog{
+	return domain.CheckResult{
 		Name:       target.Name,
 		URL:        target.URL,
 		IsUp:       isUp,
@@ -83,9 +83,9 @@ func checkURL(ctx context.Context, target domain.Target) domain.CheckLog {
 	}
 }
 
-func CheckAll(ctx context.Context, targets []domain.Target) []domain.CheckLog {
+func CheckAll(ctx context.Context, targets []domain.TargetResult) []domain.CheckResult {
 	var wg sync.WaitGroup
-	resultsChan := make(chan domain.CheckLog, len(targets))
+	resultsChan := make(chan domain.CheckResult, len(targets))
 
 	for _, target := range targets {
 		wg.Go(func() {
@@ -98,7 +98,7 @@ func CheckAll(ctx context.Context, targets []domain.Target) []domain.CheckLog {
 	wg.Wait()
 	close(resultsChan)
 
-	var results []domain.CheckLog
+	var results []domain.CheckResult
 	for res := range resultsChan {
 		results = append(results, res)
 	}
@@ -137,7 +137,7 @@ func processMonitor(ctx context.Context, ntf Notifier, cfg config.MonitorConfig)
 	notifierProcess(ntf, results)
 }
 
-func notifierProcess(ntf Notifier, results []domain.CheckLog) {
+func notifierProcess(ntf Notifier, results []domain.CheckResult) {
 	if ntf == nil {
 		return
 	}
@@ -154,7 +154,7 @@ func notifierProcess(ntf Notifier, results []domain.CheckLog) {
 	}
 }
 
-func printResults(results []domain.CheckLog) {
+func printResults(results []domain.CheckResult) {
 	fmt.Printf("\n--- Relatório de Saúde [%s] ---\n",
 		time.Now().Format("15:04:05"))
 	for _, res := range results {

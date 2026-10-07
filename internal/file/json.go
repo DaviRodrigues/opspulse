@@ -32,6 +32,6 @@ func (j *JSONFile) Create() error {
 	return nil
 }
 
-func (j *JSONFile) Load() ([]domain.Target, error) {
+func (j *JSONFile) Load() ([]domain.TargetResult, error) {
 	return j.FileDefault.Load(j.Create, json.Unmarshal)
 }

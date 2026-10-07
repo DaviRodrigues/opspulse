@@ -9,7 +9,7 @@ import (
 )
 
 func TestCreateEmbed_ColorsAndStatus(t *testing.T) {
-	upResult := domain.CheckLog{
+	upResult := domain.CheckResult{
 		URL:        "https://api.exemplo.com",
 		IsUp:       true,
 		StatusCode: 200,
@@ -20,7 +20,7 @@ func TestCreateEmbed_ColorsAndStatus(t *testing.T) {
 		t.Errorf("esperava cor verde 0x2ECC71 para UP, recebeu: %x", embedUp.Color)
 	}
 
-	downResult := domain.CheckLog{
+	downResult := domain.CheckResult{
 		URL:        "https://api.exemplo.com/erro",
 		IsUp:       false,
 		StatusCode: 500,

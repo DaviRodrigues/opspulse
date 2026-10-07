@@ -12,6 +12,10 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
+type Loader interface {
+	Load() ([]domain.TargetResult, error)
+}
+
 type UnmarshalFunc func(data []byte, v any) error
 type CreateFunc func() error
 type LoaderFactory func(path string) Loader
@@ -35,7 +39,7 @@ func GetLoaderByFile(path string) (Loader, bool) {
 	if !exists {
 		return nil, false
 	}
-	
+
 	return factory(path), true
 }
 
@@ -44,7 +48,7 @@ func (f *FileDefault) FileExists() bool {
 	return err == nil || !errors.Is(err, os.ErrNotExist)
 }
 
-func (f *FileDefault) Validate(targets []domain.Target) error {
+func (f *FileDefault) Validate(targets []domain.TargetResult) error {
 	if len(targets) == 0 {
 		return errors.New("o arquivo de targets está vazio ou não possui nenhum serviço configurado")
 	}
@@ -84,7 +88,7 @@ func (f *FileDefault) Validate(targets []domain.Target) error {
 	return errors.Join(errs...)
 }
 
-func (f *FileDefault) Load(createFn CreateFunc, unmarshalFn UnmarshalFunc) ([]domain.Target, error) {
+func (f *FileDefault) Load(createFn CreateFunc, unmarshalFn UnmarshalFunc) ([]domain.TargetResult, error) {
 	if !f.FileExists() {
 		if err := createFn(); err != nil {
 			return nil, err
@@ -95,7 +99,7 @@ func (f *FileDefault) Load(createFn CreateFunc, unmarshalFn UnmarshalFunc) ([]do
 		return nil, fmt.Errorf("falha ao ler arquivo %s: %w", f.Path, err)
 	}
 
-	var targets []domain.Target
+	var targets []domain.TargetResult
 	if err := unmarshalFn(bytes, &targets); err != nil {
 		return nil, fmt.Errorf("erro de sintaxe no arquivo %s: %w", f.Path, err)
 	}

@@ -55,7 +55,7 @@ func TestCheckURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := checkURL(
 				context.Background(),
-				domain.Target{
+				domain.TargetResult{
 					Name:    tt.name,
 					URL:     tt.url,
 					Enabled: true,
@@ -91,7 +91,7 @@ func TestCheckAll(t *testing.T) {
 
 	timeout := 5 * time.Second
 	enabled := true
-	targets := []domain.Target{
+	targets := []domain.TargetResult{
 		{URL: server1.URL, Enabled: enabled, Timeout: timeout},
 		{URL: server2.URL, Enabled: enabled, Timeout: timeout},
 		{URL: server3.URL, Enabled: enabled, Timeout: timeout},
@@ -102,7 +102,7 @@ func TestCheckAll(t *testing.T) {
 		t.Fatalf("esperava %d resultados, mas recebeu %d", len(targets), len(results))
 	}
 
-	resultsMap := make(map[string]domain.CheckLog)
+	resultsMap := make(map[string]domain.CheckResult)
 	for _, res := range results {
 		resultsMap[res.URL] = res
 	}

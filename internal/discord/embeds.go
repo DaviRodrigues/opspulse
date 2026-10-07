@@ -8,7 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func titleAndColorStatus(result domain.CheckLog) (int, string) {
+func titleAndColorStatus(result domain.CheckResult) (int, string) {
 	var color int
 	var title string
 
@@ -23,7 +23,7 @@ func titleAndColorStatus(result domain.CheckLog) (int, string) {
 	return color, title
 }
 
-func createEmbed(result domain.CheckLog) *discordgo.MessageEmbed {
+func createEmbed(result domain.CheckResult) *discordgo.MessageEmbed {
 	color, title := titleAndColorStatus(result)
 
 	statusText := fmt.Sprintf("%d", result.StatusCode)
@@ -79,7 +79,7 @@ func createRecheckButton() discordgo.ActionsRow {
 	)
 }
 
-func createStatusSummaryEmbed(results []domain.CheckLog) []*discordgo.MessageEmbed {
+func createStatusSummaryEmbed(results []domain.CheckResult) []*discordgo.MessageEmbed {
 	var embeds []*discordgo.MessageEmbed
 	for _, result := range results {
 		embeds = append(embeds, createEmbed(result))

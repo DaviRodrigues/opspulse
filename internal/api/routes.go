@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func targetRoutes(r chi.Router, s *Server, t []domain.Target) {
+func targetRoutes(r chi.Router, s *Server, t []domain.TargetResult) {
 	r.Route("/targets", func(r chi.Router) {
 		r.Get("/status", func(w http.ResponseWriter, r *http.Request) {
 			// Mais pra frente remover a dependência de target e repassar ao banco

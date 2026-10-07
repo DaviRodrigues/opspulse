@@ -32,6 +32,6 @@ func (y *YAMLFile) Create() error {
 	return nil
 }
 
-func (y *YAMLFile) Load() ([]domain.Target, error) {
+func (y *YAMLFile) Load() ([]domain.TargetResult, error) {
 	return y.FileDefault.Load(y.Create, yaml.Unmarshal)
 }
