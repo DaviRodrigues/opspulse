@@ -9,6 +9,20 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
+func SendJSON(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if data != nil {
+		_ = json.NewEncoder(w).Encode(data)
+	}
+}
+
+func SendError(w http.ResponseWriter, status int, message string) {
+	SendJSON(w, status, map[string]string{
+		"error": message,
+	})
+}
+
 func PrepareSSE(w http.ResponseWriter) (http.Flusher, bool) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
