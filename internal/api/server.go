@@ -12,6 +12,7 @@ import (
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/config"
+	"github.com/DaviRodrigues/opspulse/internal/database"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	slogchi "github.com/samber/slog-chi"
@@ -40,10 +41,17 @@ type Server struct {
 	managerHttp  *http.Server
 	serverConfig config.ServerConfig
 	Broker       *EventBroker
+	MongoClient  *database.MongoClient
 }
 
-func NewServer(ctx context.Context, serverCfg config.ServerConfig, monitorCfg config.MonitorConfig) *Server {
+func NewServer(
+	ctx context.Context,
+	mongoClient *database.MongoClient,
+	serverCfg config.ServerConfig,
+	monitorCfg config.MonitorConfig,
+) (*Server, error) {
 	r := chi.NewRouter()
+
 	return &Server{
 		Router: r,
 		managerHttp: &http.Server{
@@ -57,7 +65,8 @@ func NewServer(ctx context.Context, serverCfg config.ServerConfig, monitorCfg co
 		},
 		serverConfig: serverCfg,
 		Broker:       NewCheckBroker(),
-	}
+		MongoClient:  mongoClient,
+	}, nil
 }
 
 func (s *Server) SetConfigures(loggerManager *slog.Logger, monitorConfig config.MonitorConfig) {
@@ -105,6 +114,12 @@ func (s *Server) Setup(ctx context.Context, monitorConfig config.MonitorConfig) 
 
 	wg.Wait()
 	slog.Info("Server gracefully stopped.")
+
+	if err := s.MongoClient.Close(ctx); err != nil {
+		slog.Error("Failed to close connection with Database", "error", err)
+		return err
+	}
+
 	return nil
 }
 
@@ -135,14 +150,17 @@ func (s *Server) registerRoutes(monitorConfig config.MonitorConfig) {
 	s.Router.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", HandleHealth)
 
-		targetRoutes(r, s, monitorConfig.TargetURLs)
+		targetRoutes(r, TargetHandler{
+			broker:  s.Broker,
+			targets: monitorConfig.TargetURLs,
+		})
 	})
 
 	s.Router.Get("/docs/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "docs/openapi.yaml")
 	})
 
-		s.Router.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
+	s.Router.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write([]byte(scalarHTML))
 	})
