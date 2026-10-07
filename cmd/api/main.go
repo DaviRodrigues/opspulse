@@ -9,6 +9,7 @@ import (
 
 	"github.com/DaviRodrigues/opspulse/internal/api"
 	"github.com/DaviRodrigues/opspulse/internal/config"
+	"github.com/DaviRodrigues/opspulse/internal/database"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 	"github.com/DaviRodrigues/opspulse/internal/logger"
 )
@@ -37,7 +38,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	server := api.NewServer(ctx, cfg.Server, cfg.Monitor)
+	mongoClient, err := database.NewMongoClient(ctx, cfg.Database)
+	if err != nil {
+		slog.Error("Não foi possível inistanciar a conexão com banco", "error", err)
+		os.Exit(1)
+	}
+	defer mongoClient.Close(ctx)
+
+	server, err := api.NewServer(ctx, mongoClient, cfg.Server, cfg.Monitor)
+	if err != nil {
+		slog.Error("Não foi possível inistanciar o servidor", "error", err)
+		os.Exit(1)
+	}
 	server.SetConfigures(loggerManager, cfg.Monitor)
 
 	if err = server.Setup(ctx, cfg.Monitor); err != nil {
@@ -45,4 +57,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-
