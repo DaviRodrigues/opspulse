@@ -5,10 +5,23 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
-func HandleSSE(w http.ResponseWriter, r *http.Request, broker *EventBroker) {
+// TODO: coloca repository aqui depois
+type TargetHandler struct {
+	broker  *EventBroker
+	targets []domain.TargetResult // apenas por enquanto, retirar quanto tiver banco
+}
+
+func HandleHealth(w http.ResponseWriter, r *http.Request) {
+	SendJSON(w, http.StatusOK, map[string]string{
+		"status": "OK",
+	})
+}
+
+func (handler *TargetHandler) HandleSSE(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := PrepareSSE(w)
 	if !ok {
 		slog.Error("Streaming not supported")
@@ -17,8 +30,8 @@ func HandleSSE(w http.ResponseWriter, r *http.Request, broker *EventBroker) {
 	}
 
 	clientChan := make(chan domain.Event, 10)
-	broker.Register(clientChan)
-	defer broker.UnRegister(clientChan)
+	handler.broker.Register(clientChan)
+	defer handler.broker.UnRegister(clientChan)
 
 	heartbeat := time.NewTicker(30 * time.Second)
 	defer heartbeat.Stop()
@@ -39,4 +52,11 @@ func HandleSSE(w http.ResponseWriter, r *http.Request, broker *EventBroker) {
 			flusher.Flush()
 		}
 	}
+}
+
+func (handler *TargetHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
+	SendJSON(w,
+		http.StatusOK,
+		checker.CheckAll(r.Context(), handler.targets),
+	)
 }
