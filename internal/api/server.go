@@ -66,6 +66,7 @@ func (s *Server) SetConfigures(loggerManager *slog.Logger, monitorConfig config.
 	s.Router.Use(middleware.RealIP)    // Captura o IP real do cliente
 	s.Router.Use(middleware.Logger)    // Log de requisições estruturado
 	s.Router.Use(middleware.Recoverer) // Recupera de panics sem derrubar a API
+	s.Router.Use(corsMiddleware)
 
 	s.registerRoutes(monitorConfig)
 }
