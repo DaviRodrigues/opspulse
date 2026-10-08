@@ -122,7 +122,11 @@ func (s *Server) Setup(ctx context.Context, monitorConfig config.MonitorConfig) 
 
 	return nil
 }
-
+/* TODO:
+Tirar essa parte do server e passar para o checker, utilizar um padrão de projeto strategy, talvez com
+adapter pra abstrair ainda mais as operações. A questão toda é lidar com os cases do channel, provavel
+que dará um trabalho então ATENÇÃO!
+*/
 func (s *Server) StartMonitoring(ctx context.Context, monitorConfig config.MonitorConfig) {
 	interval := monitorConfig.Interval
 	if interval <= 0 {
