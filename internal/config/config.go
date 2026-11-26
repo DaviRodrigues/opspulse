@@ -19,13 +19,15 @@ var defaultFallback = Config{
 		OutputDir: "./log",
 	},
 	Server: ServerConfig{
-		Port:            "3333",
-		ReadTimeout:     5 * time.Second,
-		WriteTimeout:    0,
-		ShutdownTimeout: 15 * time.Second,
+		Port:               "3333",
+		ReadTimeout:        5 * time.Second,
+		WriteTimeout:       0,
+		ShutdownTimeout:    15 * time.Second,
+		CORSAllowedOrigins: []string{"http://localhost:5173", "http://localhost:5174"},
 	},
 	Monitor: MonitorConfig{
 		Interval:       5 * time.Minute,
+		DefaultTimeout: 5 * time.Second,
 		AlertThreshold: 0,
 	},
 	Discord: DiscordConfig{
@@ -39,8 +41,6 @@ var defaultFallback = Config{
 		Timeout: 5 * time.Second,
 	},
 }
-
-const defaultTargetsFilePath = "./target/target.json"
 
 type Config struct {
 	App      AppConfig

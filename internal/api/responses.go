@@ -9,6 +9,30 @@ import (
 	"github.com/DaviRodrigues/opspulse/internal/domain"
 )
 
+type ErrorResponse struct {
+	Error string `json:"error" validate:"required"`
+}
+
+type HealthResponse struct {
+	Status string `json:"status" validate:"required"`
+}
+
+type PaginationMeta struct {
+	Total  int64 `json:"total" validate:"required"`
+	Limit  int64 `json:"limit" validate:"required"`
+	Offset int64 `json:"offset" validate:"required"`
+}
+
+type PaginatedTargetsResponse struct {
+	Data       []*domain.Target `json:"data" validate:"required"`
+	Pagination PaginationMeta   `json:"pagination" validate:"required"`
+}
+
+type PaginatedCheckLogsResponse struct {
+	Data       []domain.CheckLog `json:"data" validate:"required"`
+	Pagination PaginationMeta    `json:"pagination" validate:"required"`
+}
+
 func SendJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -18,8 +42,8 @@ func SendJSON(w http.ResponseWriter, status int, data any) {
 }
 
 func SendError(w http.ResponseWriter, status int, message string) {
-	SendJSON(w, status, map[string]string{
-		"error": message,
+	SendJSON(w, status, ErrorResponse{
+		Error: message,
 	})
 }
 
@@ -28,7 +52,6 @@ func PrepareSSE(w http.ResponseWriter) (http.Flusher, bool) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {

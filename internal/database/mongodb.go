@@ -2,11 +2,14 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/config"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
+
+const defaultMongoTimeout = 5 * time.Second
 
 type MongoClient struct {
 	client   *mongo.Client
@@ -14,7 +17,16 @@ type MongoClient struct {
 }
 
 func NewMongoClient(ctx context.Context, cfgMongo config.DatabaseConfig) (*MongoClient, error) {
-	ctxTimeout, cancel := context.WithTimeout(ctx, cfgMongo.Timeout)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	timeout := cfgMongo.Timeout
+	if timeout <= 0 {
+		timeout = defaultMongoTimeout
+	}
+
+	ctxTimeout, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	opts := options.Client().ApplyURI(cfgMongo.URI)
@@ -24,6 +36,7 @@ func NewMongoClient(ctx context.Context, cfgMongo config.DatabaseConfig) (*Mongo
 	}
 
 	if err := client.Ping(ctxTimeout, nil); err != nil {
+		_ = client.Disconnect(context.Background())
 		return nil, err
 	}
 
@@ -34,8 +47,18 @@ func NewMongoClient(ctx context.Context, cfgMongo config.DatabaseConfig) (*Mongo
 }
 
 func (c *MongoClient) Database() *mongo.Database {
+	if c == nil {
+		return nil
+	}
 	return c.database
 }
+
 func (c *MongoClient) Close(ctx context.Context) error {
+	if c == nil || c.client == nil {
+		return nil
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	return c.client.Disconnect(ctx)
 }

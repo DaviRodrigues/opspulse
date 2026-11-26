@@ -6,15 +6,15 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/config"
 	"github.com/DaviRodrigues/opspulse/internal/database"
-	"github.com/go-chi/chi/middleware"
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	slogchi "github.com/samber/slog-chi"
 )
 
@@ -37,11 +37,14 @@ const scalarHTML = `<!doctype html>
 </html>`
 
 type Server struct {
-	Router       *chi.Mux
-	managerHttp  *http.Server
-	serverConfig config.ServerConfig
-	Broker       *EventBroker
-	MongoClient  *database.MongoClient
+	Router        *chi.Mux
+	managerHttp   *http.Server
+	serverConfig  config.ServerConfig
+	Broker        *EventBroker
+	MongoClient   *database.MongoClient
+	targetRepo    database.TargetRepository
+	checkLogRepo  database.CheckLogRepository
+	reconcileChan chan struct{}
 }
 
 func NewServer(
@@ -50,7 +53,30 @@ func NewServer(
 	serverCfg config.ServerConfig,
 	monitorCfg config.MonitorConfig,
 ) (*Server, error) {
+	var targetRepo database.TargetRepository
+	var checkLogRepo database.CheckLogRepository
+	if mongoClient != nil && mongoClient.Database() != nil {
+		db := mongoClient.Database()
+		targetRepo = database.NewMongoDBTargetRepository(db)
+		checkLogRepo = database.NewMongoDBCheckLogRepository(db)
+	}
+
+	return NewServerWithRepos(ctx, mongoClient, targetRepo, checkLogRepo, serverCfg, monitorCfg)
+}
+
+func NewServerWithRepos(
+	ctx context.Context,
+	mongoClient *database.MongoClient,
+	targetRepo database.TargetRepository,
+	checkLogRepo database.CheckLogRepository,
+	serverCfg config.ServerConfig,
+	monitorCfg config.MonitorConfig,
+) (*Server, error) {
 	r := chi.NewRouter()
+	readHeaderTimeout := serverCfg.ReadTimeout
+	if readHeaderTimeout <= 0 {
+		readHeaderTimeout = 5 * time.Second
+	}
 
 	return &Server{
 		Router: r,
@@ -60,43 +86,66 @@ func NewServer(
 			BaseContext: func(l net.Listener) context.Context {
 				return ctx
 			},
-			ReadTimeout:  serverCfg.ReadTimeout,
-			WriteTimeout: serverCfg.WriteTimeout, // 0 para SSE streaming contínuo
+			ReadTimeout:       serverCfg.ReadTimeout,
+			ReadHeaderTimeout: readHeaderTimeout,
+			WriteTimeout:      serverCfg.WriteTimeout, // 0 para SSE streaming contínuo
 		},
-		serverConfig: serverCfg,
-		Broker:       NewCheckBroker(),
-		MongoClient:  mongoClient,
+		serverConfig:  serverCfg,
+		Broker:        NewCheckBroker(),
+		MongoClient:   mongoClient,
+		targetRepo:    targetRepo,
+		checkLogRepo:  checkLogRepo,
+		reconcileChan: make(chan struct{}, 1),
 	}, nil
 }
 
 func (s *Server) SetConfigures(loggerManager *slog.Logger, monitorConfig config.MonitorConfig) {
-	s.Router.Use(slogchi.New(loggerManager))
 	s.Router.Use(middleware.RequestID) // Injeta ID único para rastreamento de requests
 	s.Router.Use(middleware.RealIP)    // Captura o IP real do cliente
-	s.Router.Use(middleware.Logger)    // Log de requisições estruturado
-	s.Router.Use(middleware.Recoverer) // Recupera de panics sem derrubar a API
-	s.Router.Use(corsMiddleware)
+	if loggerManager != nil {
+		s.Router.Use(slogchi.New(loggerManager))
+	} else {
+		s.Router.Use(middleware.Logger) // Log de requisições estruturado (fallback)
+	}
+	s.Router.Use(middleware.Recoverer)    // Recupera de panics sem derrubar a API
+	s.Router.Use(middleware.StripSlashes) // Normaliza trailing slash em rotas REST
+	s.Router.Use(corsMiddleware(s.serverConfig.CORSAllowedOrigins))
 
 	s.registerRoutes(monitorConfig)
 }
 
 func (s *Server) Setup(ctx context.Context, monitorConfig config.MonitorConfig) error {
+	runCtx, runCancel := context.WithCancel(ctx)
+	defer runCancel()
+
+	serveErr := make(chan error, 1)
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
 		slog.Info("Starting API server...", "port", s.serverConfig.Port)
 		if err := s.managerHttp.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("Server failed to start", "error", err)
-			os.Exit(1)
+			serveErr <- err
+			runCancel()
 		}
 	})
 
 	wg.Go(func() {
-		s.StartMonitoring(ctx, monitorConfig)
+		s.StartMonitoring(runCtx, monitorConfig)
 	})
 
-	<-ctx.Done()
-	slog.Info("Shutdown signal received, starting graceful teardown...")
+	var startErr error
+	select {
+	case <-ctx.Done():
+		slog.Info("Shutdown signal received, starting graceful teardown...")
+	case startErr = <-serveErr:
+		slog.Error("API server aborted due to listen error", "error", startErr)
+	}
+
+	runCancel()
+	if s.Broker != nil {
+		s.Broker.Close()
+	}
 
 	shutdownTimeout := s.serverConfig.ShutdownTimeout
 	if shutdownTimeout <= 0 {
@@ -106,48 +155,83 @@ func (s *Server) Setup(ctx context.Context, monitorConfig config.MonitorConfig) 
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
-	err := s.managerHttp.Shutdown(timeoutCtx)
-	if err != nil {
+	if err := s.managerHttp.Shutdown(timeoutCtx); err != nil {
 		slog.Error("Server forced to shutdown", "error", err)
+		_ = s.managerHttp.Close()
+		wg.Wait()
 		return err
 	}
 
 	wg.Wait()
 	slog.Info("Server gracefully stopped.")
 
-	if err := s.MongoClient.Close(ctx); err != nil {
-		slog.Error("Failed to close connection with Database", "error", err)
-		return err
-	}
-
-	return nil
+	return startErr
 }
-/* TODO:
-Tirar essa parte do server e passar para o checker, utilizar um padrão de projeto strategy, talvez com
-adapter pra abstrair ainda mais as operações. A questão toda é lidar com os cases do channel, provavel
-que dará um trabalho então ATENÇÃO!
-*/
-func (s *Server) StartMonitoring(ctx context.Context, monitorConfig config.MonitorConfig) {
-	interval := monitorConfig.Interval
-	if interval <= 0 {
-		interval = 30 * time.Second
+
+func (s *Server) signalReconcile() {
+	if s.reconcileChan == nil {
+		return
 	}
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	select {
+	case s.reconcileChan <- struct{}{}:
+	default:
+	}
+}
 
-	event := NewStatusEvent(checker.CheckAll(ctx, monitorConfig.TargetURLs))
-	s.Broker.Publish(event)
+func (s *Server) runMonitorCycle(ctx context.Context, defaultTimeout time.Duration) {
+	if s.targetRepo == nil {
+		return
+	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			slog.Info("🛑 Encerrando monitoramento da API de forma segura")
-			return
-		case <-ticker.C:
-			event := NewStatusEvent(checker.CheckAll(ctx, monitorConfig.TargetURLs))
-			s.Broker.Publish(event)
+	targetPtrs, err := s.targetRepo.FindEnabled(ctx)
+	if err != nil {
+		slog.Error("Falha ao buscar alvos habilitados na API", "error", err)
+		return
+	}
+
+	targets := make([]domain.Target, 0, len(targetPtrs))
+	for _, t := range targetPtrs {
+		if t != nil {
+			targets = append(targets, *t)
 		}
 	}
+
+	results, logs := checker.CheckTargets(ctx, targets, defaultTimeout)
+	if s.checkLogRepo != nil && len(logs) > 0 {
+		if err := s.checkLogRepo.CreateBatch(ctx, logs); err != nil {
+			slog.Error("Falha ao persistir lote de check_logs na API", "error", err)
+		}
+	}
+
+	if s.Broker != nil {
+		s.Broker.Publish(NewStatusEvent(results))
+		for _, res := range results {
+			if !res.IsUp {
+				s.Broker.Publish(NewAlertEvent(res))
+			}
+		}
+	}
+}
+
+func (s *Server) StartMonitoring(ctx context.Context, monitorConfig config.MonitorConfig) {
+	checker.RunTargetScheduler(ctx, s.targetRepo, s.checkLogRepo, s.reconcileChan, monitorConfig, checker.SchedulerHooks{
+		OnResult: func(res domain.CheckResult, snapshot []domain.CheckResult) {
+			if s.Broker == nil {
+				return
+			}
+			s.Broker.Publish(NewStatusEvent(snapshot))
+			if !res.IsUp {
+				s.Broker.Publish(NewAlertEvent(res))
+			}
+		},
+		OnSnapshot: func(snapshot []domain.CheckResult) {
+			if s.Broker == nil {
+				return
+			}
+			s.Broker.Publish(NewStatusEvent(snapshot))
+		},
+	})
+	slog.Info("🛑 Encerrando monitoramento da API de forma segura")
 }
 
 func (s *Server) registerRoutes(monitorConfig config.MonitorConfig) {
@@ -155,17 +239,25 @@ func (s *Server) registerRoutes(monitorConfig config.MonitorConfig) {
 		r.Get("/health", HandleHealth)
 
 		targetRoutes(r, TargetHandler{
-			broker:  s.Broker,
-			targets: monitorConfig.TargetURLs,
+			broker:         s.Broker,
+			targetRepo:     s.targetRepo,
+			checkLogRepo:   s.checkLogRepo,
+			defaultTimeout: monitorConfig.DefaultTimeout,
+			onTargetChange: s.signalReconcile,
+		})
+
+		checkLogRoutes(r, CheckLogHandler{
+			checkLogRepo: s.checkLogRepo,
 		})
 	})
 
 	s.Router.Get("/docs/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/yaml")
 		http.ServeFile(w, r, "docs/openapi.yaml")
 	})
 
 	s.Router.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte(scalarHTML))
+		_, _ = w.Write([]byte(scalarHTML))
 	})
 }

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/config"
+	"github.com/DaviRodrigues/opspulse/internal/database"
 	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/bwmarrin/discordgo"
 )
@@ -68,19 +70,56 @@ func New(cfgDiscord *config.DiscordConfig) (*Bot, error) {
 	}, nil
 }
 
-func (b *Bot) Setup(ctx context.Context, cfg config.MonitorConfig) (chan struct{}, error) {
+func runOnDemandChecks(
+	ctx context.Context,
+	targetRepo database.TargetRepository,
+	checkLogRepo database.CheckLogRepository,
+	defaultTimeout time.Duration,
+) []domain.CheckResult {
+	if targetRepo == nil {
+		return []domain.CheckResult{}
+	}
+
+	targetPtrs, err := targetRepo.FindEnabled(ctx)
+	if err != nil {
+		slog.Error("Erro ao buscar alvos habilitados para comando Discord", "error", err)
+		return []domain.CheckResult{}
+	}
+
+	targets := make([]domain.Target, 0, len(targetPtrs))
+	for _, t := range targetPtrs {
+		if t != nil {
+			targets = append(targets, *t)
+		}
+	}
+
+	results, logs := checker.CheckTargets(ctx, targets, defaultTimeout)
+	if checkLogRepo != nil && len(logs) > 0 {
+		if err := checkLogRepo.CreateBatch(ctx, logs); err != nil {
+			slog.Error("Falha ao persistir check_logs de checagem sob demanda", "error", err)
+		}
+	}
+
+	return results
+}
+
+func (b *Bot) Setup(
+	ctx context.Context,
+	targetRepo database.TargetRepository,
+	checkLogRepo database.CheckLogRepository,
+	defaultTimeout time.Duration,
+) (chan struct{}, error) {
 	if err := b.RegisterCommands(); err != nil {
 		return nil, err
 	}
 
-	// TODO: preciso melhorar a criação/registro dos handlers, ta muito acoplado com a função anônima
 	triggerChan := make(chan struct{}, 1)
 	b.RegisterHandlers(func() []domain.CheckResult {
 		select {
 		case triggerChan <- struct{}{}:
 		default:
 		}
-		return checker.CheckAll(ctx, cfg.TargetURLs)
+		return runOnDemandChecks(ctx, targetRepo, checkLogRepo, defaultTimeout)
 	})
 
 	return triggerChan, nil

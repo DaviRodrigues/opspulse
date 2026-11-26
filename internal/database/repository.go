@@ -2,49 +2,62 @@ package database
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/domain"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-const CheckLogCollectionName = "check_logs"
-const TargetCollectionName = "targets"
+const (
+	CheckLogCollectionName = "check_logs"
+	TargetCollectionName   = "targets"
 
-type CheckLogRepository interface {
-	Create(ctx context.Context, checkLog *domain.CheckLog) error
-	FindByID(ctx context.Context, id bson.ObjectID) (*domain.CheckLog, error)
-	FindAll(ctx context.Context, limit, offset int64) ([]*domain.CheckLog, error)
+	defaultTargetMethod  = "GET"
+	defaultTargetTimeout = 5 * time.Second
+)
+
+type TargetFilter struct {
+	Enabled *bool
+	Tag     string
+	Search  string
 }
-
-type MongoDBCheckLogRepository struct {
-	collection *mongo.Collection
-}
-
-func (check *MongoDBCheckLogRepository) Create(ctx context.Context, checkLog *domain.CheckLog) error
-
-func (check *MongoDBCheckLogRepository) FindByID(ctx context.Context, id string) (*domain.CheckLog, error)
-
-func (check *MongoDBCheckLogRepository) FindAll(ctx context.Context, limit, offset int64) ([]*domain.CheckLog, error)
 
 type TargetRepository interface {
 	Create(ctx context.Context, target *domain.Target) error
 	FindByID(ctx context.Context, id bson.ObjectID) (*domain.Target, error)
-	FindAll(ctx context.Context) ([]*domain.Target, error)
-	Update(ctx context.Context, target *domain.Target) error
-	Delete(ctx context.Context) error
+	FindAll(ctx context.Context, filter TargetFilter, limit, offset int64) ([]*domain.Target, int64, error)
+	FindEnabled(ctx context.Context) ([]*domain.Target, error)
+	Update(ctx context.Context, id bson.ObjectID, target *domain.Target) error
+	Delete(ctx context.Context, id bson.ObjectID) error
 }
 
-type MongoDBTargetRepository struct {
-	collection *mongo.Collection
+type CheckLogFilter struct {
+	TargetID   *bson.ObjectID
+	IsUp       *bool
+	StatusCode *int
+	From       *time.Time
+	To         *time.Time
+	Search     string
 }
 
-func (tar *MongoDBTargetRepository) Create(ctx context.Context, target *domain.Target) error
+type CheckLogRepository interface {
+	Create(ctx context.Context, checkLog *domain.CheckLog) error
+	CreateBatch(ctx context.Context, logs []domain.CheckLog) error
+	FindByID(ctx context.Context, id bson.ObjectID) (*domain.CheckLog, error)
+	FindAll(ctx context.Context, filter CheckLogFilter, limit, offset int64) ([]domain.CheckLog, int64, error)
+	FindByTargetID(ctx context.Context, targetID bson.ObjectID, limit, offset int64) ([]domain.CheckLog, int64, error)
+}
 
-func (tar *MongoDBTargetRepository) FindByID(ctx context.Context, id bson.ObjectID) (*domain.Target, error)
+func normalizeTargetDefaults(target *domain.Target) {
+	method := strings.TrimSpace(target.Method)
+	if method == "" {
+		target.Method = defaultTargetMethod
+	} else {
+		target.Method = strings.ToUpper(method)
+	}
 
-func (tar *MongoDBTargetRepository) FindAll(ctx context.Context) ([]*domain.Target, error)
-
-func (tar *MongoDBTargetRepository) Update(ctx context.Context, target *domain.Target) error
-
-func (tar *MongoDBTargetRepository) Delete(ctx context.Context) error
+	if target.Timeout <= 0 {
+		target.Timeout = defaultTargetTimeout
+	}
+}

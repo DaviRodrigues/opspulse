@@ -4,13 +4,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/DaviRodrigues/opspulse/internal/file"
 )
 
 type MonitorConfig struct {
 	Interval       time.Duration
-	TargetURLs     []domain.TargetResult
+	DefaultTimeout time.Duration
 	AlertThreshold int
 }
 
@@ -22,14 +21,7 @@ func LoadMonitorConfig(envManager file.EnvFile) (MonitorConfig, error) {
 		err_s = append(err_s, err)
 	}
 
-	pathTargetFile := envManager.LoadVariable("MONITOR_TARGETS_FILE", defaultTargetsFilePath)
-
-	loader, isValidFormat := file.GetLoaderByFile(pathTargetFile)
-	if !isValidFormat {
-		err_s = append(err_s, domain.ErrInvalidFileFormat)
-	}
-
-	targetUrls, err := loader.Load()
+	defaultTimeout, err := envManager.LoadDurationEnv("MONITOR_DEFAULT_TIMEOUT", defaultFallback.Monitor.DefaultTimeout.String())
 	if err != nil {
 		err_s = append(err_s, err)
 	}
@@ -40,7 +32,7 @@ func LoadMonitorConfig(envManager file.EnvFile) (MonitorConfig, error) {
 
 	return MonitorConfig{
 		Interval:       checkInterval,
-		TargetURLs:     targetUrls,
+		DefaultTimeout: defaultTimeout,
 		AlertThreshold: defaultFallback.Monitor.AlertThreshold,
 	}, nil
 }

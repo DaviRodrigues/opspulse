@@ -80,7 +80,21 @@ func createRecheckButton() discordgo.ActionsRow {
 }
 
 func createStatusSummaryEmbed(results []domain.CheckResult) []*discordgo.MessageEmbed {
-	var embeds []*discordgo.MessageEmbed
+	if len(results) == 0 {
+		return []*discordgo.MessageEmbed{
+			{
+				Title:       "ℹ️ Nenhum alvo ativo configurado",
+				Description: "Não há serviços habilitados para monitoramento no momento.",
+				Color:       0x3498DB,
+				Timestamp:   time.Now().UTC().Format(time.RFC3339),
+				Footer: &discordgo.MessageEmbedFooter{
+					Text: "OpsPulse Monitor",
+				},
+			},
+		}
+	}
+
+	embeds := make([]*discordgo.MessageEmbed, 0, len(results))
 	for _, result := range results {
 		embeds = append(embeds, createEmbed(result))
 	}
