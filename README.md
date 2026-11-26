@@ -57,21 +57,14 @@ cp .env.example .env
 # Edite o .env com seu DISCORD_TOKEN, DISCORD_CHANNEL_ID e etc...
 ```
 
-### 2. Configurar Target
-
-*Lembrete*: no opspulse/main.go você pode configurar o Target para carregar seu tipo de arquivo, pasta e nome.
-
-```bash
-target.json
-target.yaml
-# Edite um dos arquivos com base no target_example de ambos
-```
-
 ### 2. Configurar Arquivo de Target
 
+*Lembrete*: no `cmd/opspulse/main.go` (ou via `MONITOR_TARGETS_FILE`) você pode configurar o arquivo de target enquanto a migração completa para MongoDB está em andamento.
+
 ```bash
-cp .target_example(.json ou .yaml) .target(.json ou .yaml)
-# Edite o arquivo e coloque os serviços com as configurações
+cp target/target_example.json target/target.json
+# ou: cp target/target_example.yaml target/target.yaml
+# Edite o arquivo e configure os serviços monitorados
 ```
 
 ### 3. Rodar com Go ou Docker
@@ -99,6 +92,20 @@ docker compose -f deployments/compose.dev.yml --profile api --profile app up
 ```bash
 go test -v -race ./...
 ```
+
+---
+
+## Documentação & Especificações (SDD)
+
+- **Especificações SDD (`specs/`):**
+  - [`specs/constitution.md`](specs/constitution.md) — Princípios arquiteturais, dependências mínimas, concorrência e segurança
+  - [`specs/spec.md`](specs/spec.md) — Especificação funcional, contratos de interface (Escopo Atual R1–R4 e Roadmap Futuro)
+  - [`specs/plan.md`](specs/plan.md) — Arquitetura do sistema, deltas técnicos e plano de deploy
+  - [`specs/tasks.md`](specs/tasks.md) — Plano de tarefas por milestone e critérios de aceitação
+- **Guias Gerais & Referências (`docs/`):**
+  - [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md) — Ciclo de engenharia em 5 passos, TDD e hot-reload
+  - [`docs/SOURCES_DEVELOPEMENT.md`](docs/SOURCES_DEVELOPEMENT.md) — Fontes técnicas e referências oficiais
+  - [`docs/openapi.yaml`](docs/openapi.yaml) — Especificação OpenAPI 3.1 (servida em `/docs`)
 
 ---
 
