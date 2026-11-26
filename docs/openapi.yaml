@@ -1,0 +1,672 @@
+openapi: 3.1.1
+info:
+  title: OpsPulse API
+  description: HTTP API for managing monitored targets, querying check logs, and streaming live health events.
+  version: 1.0.0
+  contact:
+    name: OpsPulse
+  license:
+    name: ""
+paths:
+  /api/v1/check-logs:
+    get:
+      tags:
+        - /api/v1
+      operationId: getApiV1CheckLogs
+      parameters:
+        - name: target_id
+          in: query
+          schema:
+            type: string
+        - name: is_up
+          in: query
+          schema:
+            type: string
+        - name: status_code
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+        - name: to
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: string
+        - name: offset
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCheckLogsResponse'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/check-logs/{id}:
+    get:
+      tags:
+        - /api/v1
+      operationId: getApiV1CheckLogsById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckLog'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/health:
+    get:
+      tags:
+        - /api/v1
+      operationId: getApiV1Health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /api/v1/targets:
+    get:
+      tags:
+        - /api/v1
+      operationId: getApiV1Targets
+      parameters:
+        - name: enabled
+          in: query
+          schema:
+            type: string
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: string
+        - name: offset
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTargetsResponse'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - /api/v1
+      operationId: postApiV1Targets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TargetRequest'
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Target'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/targets/{id}:
+    get:
+      tags:
+        - /api/v1
+      operationId: getApiV1TargetsById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Target'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - /api/v1
+      operationId: putApiV1TargetsById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TargetRequest'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Target'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - /api/v1
+      operationId: deleteApiV1TargetsById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - /api/v1
+      operationId: patchApiV1TargetsById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchTargetRequest'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Target'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/targets/events:
+    get:
+      tags:
+        - /api/v1
+      operationId: getApiV1TargetsEvents
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                format: binary
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+            text/plain; charset=utf-8:
+              schema:
+                type: string
+  /api/v1/targets/status:
+    get:
+      tags:
+        - /api/v1
+      operationId: getApiV1TargetsStatus
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CheckResult'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /docs:
+    get:
+      operationId: getDocs
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html; charset=utf-8:
+              schema:
+                type: string
+                format: binary
+  /docs/openapi.yaml:
+    get:
+      operationId: getDocsOpenapiYaml
+      responses:
+        "200":
+          description: OK
+          content:
+            application/yaml:
+              schema:
+                type: string
+                format: binary
+components:
+  schemas:
+    CheckLog:
+      $ref: '#/components/schemas/domain_CheckLogs'
+    CheckLogs:
+      type: object
+      properties:
+        checked_at:
+          type: string
+          format: date-time
+        error:
+          type: string
+        id:
+          type: string
+          description: MongoDB ObjectID hex string
+          pattern: ^[0-9a-fA-F]{24}$
+        is_up:
+          type: boolean
+        latency:
+          type: integer
+          format: int64
+          description: Duration in nanoseconds (Go time.Duration)
+        name:
+          type: string
+        status_code:
+          type: integer
+        target_id:
+          type: string
+          description: MongoDB ObjectID hex string
+          pattern: ^[0-9a-fA-F]{24}$
+        url:
+          type: string
+    CheckResult:
+      type: object
+      properties:
+        Error:
+          type: string
+        IsUp:
+          type: boolean
+        Latency:
+          type: integer
+          format: int64
+          description: Duration in nanoseconds (Go time.Duration)
+        Name:
+          type: string
+        StatusCode:
+          type: integer
+        URL:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    PaginatedCheckLogsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckLogs'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+      required:
+        - data
+        - pagination
+    PaginatedTargetsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Target'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+      required:
+        - data
+        - pagination
+    PaginationMeta:
+      type: object
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+      required:
+        - total
+        - limit
+        - offset
+    PatchTargetRequest:
+      type: object
+      properties:
+        body:
+          type: object
+          additionalProperties:
+            type: object
+        enabled:
+          type: boolean
+        expected_body_match:
+          type: string
+        expected_status:
+          type: array
+          items:
+            type: integer
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        interval:
+          type: integer
+          format: int64
+          description: Monitoring interval in nanoseconds (Go time.Duration; 0 uses MONITOR_INTERVAL)
+        method:
+          type: string
+        name:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        timeout:
+          type: integer
+          format: int64
+          description: Duration in nanoseconds (Go time.Duration)
+        url:
+          type: string
+    Target:
+      type: object
+      properties:
+        body:
+          type: object
+          additionalProperties:
+            type: object
+        created_at:
+          type: string
+          format: date-time
+        enabled:
+          type: boolean
+        expected_body_match:
+          type: string
+        expected_status:
+          type: array
+          items:
+            type: integer
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        id:
+          type: string
+          description: MongoDB ObjectID hex string
+          pattern: ^[0-9a-fA-F]{24}$
+        interval:
+          type: integer
+          format: int64
+          description: Monitoring interval in nanoseconds (Go time.Duration; 0 uses MONITOR_INTERVAL)
+        method:
+          type: string
+        name:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        timeout:
+          type: integer
+          format: int64
+          description: Duration in nanoseconds (Go time.Duration)
+        updated_at:
+          type: string
+          format: date-time
+        url:
+          type: string
+    TargetRequest:
+      type: object
+      properties:
+        body:
+          type: object
+          additionalProperties:
+            type: object
+        enabled:
+          type: boolean
+        expected_body_match:
+          type: string
+        expected_status:
+          type: array
+          items:
+            type: integer
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        interval:
+          type: integer
+          format: int64
+          description: Monitoring interval in nanoseconds (Go time.Duration; 0 uses MONITOR_INTERVAL)
+        method:
+          type: string
+        name:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        timeout:
+          type: integer
+          format: int64
+          description: Duration in nanoseconds (Go time.Duration)
+        url:
+          type: string
+      required:
+        - name
+        - url
+    domain_CheckLogs:
+      type: object
+      properties:
+        checked_at:
+          type: string
+          format: date-time
+        error:
+          type: string
+        id:
+          type: string
+          description: MongoDB ObjectID hex string
+          pattern: ^[0-9a-fA-F]{24}$
+        is_up:
+          type: boolean
+        latency:
+          type: integer
+          format: int64
+          description: Duration in nanoseconds (Go time.Duration)
+        name:
+          type: string
+        status_code:
+          type: integer
+        target_id:
+          type: string
+          description: MongoDB ObjectID hex string
+          pattern: ^[0-9a-fA-F]{24}$
+        url:
+          type: string

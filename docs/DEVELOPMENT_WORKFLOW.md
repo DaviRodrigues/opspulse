@@ -28,12 +28,12 @@ flowchart TD
 ### Passo 2: Pesquisa & Comparação de Abordagens
 
 - Avaliar diferentes padrões de projeto e ferramentas (ex: Actor Model vs Mutex, Air vs rebuild manual).
-- Consultar documentações oficiais e referências da indústria (registradas em [`docs/web_sites_sources.md`](file:///home/smu/repositories-git/go-project/docs/web_sites_sources.md)).
+- Consultar documentações oficiais e referências da indústria (registradas em [`docs/SOURCES_DEVELOPEMENT.md`](SOURCES_DEVELOPEMENT.md)).
 - Ponderar prós, contras e complexidade de cada opção antes de tomar a decisão arquitetural.
 
 ### Passo 3: Desenho & Anotação do Plano
 
-- **Não comece a codar diretamente.** Escreva um roteiro rápido (bullet points ou documento em `docs/steps/`) listando:
+- **Não comece a codar diretamente.** Escreva ou atualize a especificação e o roteiro de execução no padrão SDD em [`specs/`](../specs/) ([`constitution.md`](../specs/constitution.md), [`spec.md`](../specs/spec.md), [`plan.md`](../specs/plan.md), [`tasks.md`](../specs/tasks.md)) listando:
   - Arquivos que serão criados ou modificados.
   - Dependências e impactos em outros módulos.
   - Ordem lógica de execução.

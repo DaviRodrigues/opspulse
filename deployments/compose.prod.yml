@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: ../
-      dockerfile: ./build/package/Dockerfile.prod
+      dockerfile: ./build/package/go/Dockerfile.prod
       args:
         TARGET_BIN: opspulse
     container_name: opspulse-app
@@ -20,7 +20,7 @@ services:
   api:
     build:
       context: ../
-      dockerfile: ./build/package/Dockerfile.prod
+      dockerfile: ./build/package/go/Dockerfile.prod
       args:
         TARGET_BIN: api
     container_name: opspulse-api

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/checker"
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/bwmarrin/discordgo"
 )
 
-func titleAndColorStatus(result checker.CheckResult) (int, string) {
+func titleAndColorStatus(result domain.CheckResult) (int, string) {
 	var color int
 	var title string
 
@@ -23,7 +23,7 @@ func titleAndColorStatus(result checker.CheckResult) (int, string) {
 	return color, title
 }
 
-func createEmbed(result checker.CheckResult) *discordgo.MessageEmbed {
+func createEmbed(result domain.CheckResult) *discordgo.MessageEmbed {
 	color, title := titleAndColorStatus(result)
 
 	statusText := fmt.Sprintf("%d", result.StatusCode)
@@ -38,8 +38,8 @@ func createEmbed(result checker.CheckResult) *discordgo.MessageEmbed {
 		Timestamp:   time.Now().Format(time.RFC3339),
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name: "Nome do Sistema",
-				Value: result.Name,
+				Name:   "Nome do Sistema",
+				Value:  result.Name,
 				Inline: true,
 			},
 			{
@@ -60,15 +60,15 @@ func createEmbed(result checker.CheckResult) *discordgo.MessageEmbed {
 }
 
 func createActionRowButton(label, customID string, style discordgo.ButtonStyle) discordgo.ActionsRow {
-    return discordgo.ActionsRow{
-        Components: []discordgo.MessageComponent{
-            discordgo.Button{
-                Label:    label,
-                Style:    style,
-                CustomID: customID,
-            },
-        },
-    }
+	return discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				Label:    label,
+				Style:    style,
+				CustomID: customID,
+			},
+		},
+	}
 }
 
 func createRecheckButton() discordgo.ActionsRow {
@@ -79,8 +79,22 @@ func createRecheckButton() discordgo.ActionsRow {
 	)
 }
 
-func createStatusSummaryEmbed(results []checker.CheckResult) []*discordgo.MessageEmbed {
-	var embeds []*discordgo.MessageEmbed
+func createStatusSummaryEmbed(results []domain.CheckResult) []*discordgo.MessageEmbed {
+	if len(results) == 0 {
+		return []*discordgo.MessageEmbed{
+			{
+				Title:       "ℹ️ Nenhum alvo ativo configurado",
+				Description: "Não há serviços habilitados para monitoramento no momento.",
+				Color:       0x3498DB,
+				Timestamp:   time.Now().UTC().Format(time.RFC3339),
+				Footer: &discordgo.MessageEmbedFooter{
+					Text: "OpsPulse Monitor",
+				},
+			},
+		}
+	}
+
+	embeds := make([]*discordgo.MessageEmbed, 0, len(results))
 	for _, result := range results {
 		embeds = append(embeds, createEmbed(result))
 	}

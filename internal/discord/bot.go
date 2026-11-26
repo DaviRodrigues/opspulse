@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/DaviRodrigues/opspulse/internal/checker"
 	"github.com/DaviRodrigues/opspulse/internal/config"
-	"github.com/DaviRodrigues/opspulse/internal/errs"
+	"github.com/DaviRodrigues/opspulse/internal/database"
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -22,11 +24,11 @@ func validateRequiredVariables(token, channelId string) error {
 	var errs_v []error
 
 	if strings.TrimSpace(token) == "" {
-		errs_v = append(errs_v, fmt.Errorf("Token %w", errs.ErrConfigNotFound))
+		errs_v = append(errs_v, fmt.Errorf("Token %w", domain.ErrNotFound))
 	}
 
 	if strings.TrimSpace(channelId) == "" {
-		errs_v = append(errs_v, fmt.Errorf("Channel %w", errs.ErrConfigNotFound))
+		errs_v = append(errs_v, fmt.Errorf("Channel %w", domain.ErrNotFound))
 	}
 
 	if len(errs_v) > 0 {
@@ -45,19 +47,19 @@ func New(cfgDiscord *config.DiscordConfig) (*Bot, error) {
 	dg, err := discordgo.New("Bot " + cfgDiscord.Token)
 	if err != nil {
 		slog.Error("Session Unavaible",
-			"errType", errs.ErrDiscordAuth,
+			"errType", domain.ErrDiscordAuth,
 			"error", err,
 		)
-		return nil, fmt.Errorf("%w session (more info: %w)", errs.ErrDiscordAuth, err)
+		return nil, fmt.Errorf("%w session (more info: %w)", domain.ErrDiscordAuth, err)
 	}
 
 	err = dg.Open()
 	if err != nil {
 		slog.Error("Connection Error",
-			"errType", errs.ErrDiscordAuth,
+			"errType", domain.ErrDiscordAuth,
 			"error", err,
 		)
-		return nil, fmt.Errorf("%w open conection (more info: %w)", errs.ErrDiscordAuth, err)
+		return nil, fmt.Errorf("%w open conection (more info: %w)", domain.ErrDiscordAuth, err)
 	}
 
 	slog.Info("Conexão com Discord estabelecida!")
@@ -68,19 +70,56 @@ func New(cfgDiscord *config.DiscordConfig) (*Bot, error) {
 	}, nil
 }
 
-func (b *Bot) Setup(ctx context.Context, cfg config.MonitorConfig) (chan struct{}, error) {
+func runOnDemandChecks(
+	ctx context.Context,
+	targetRepo database.TargetRepository,
+	checkLogRepo database.CheckLogRepository,
+	defaultTimeout time.Duration,
+) []domain.CheckResult {
+	if targetRepo == nil {
+		return []domain.CheckResult{}
+	}
+
+	targetPtrs, err := targetRepo.FindEnabled(ctx)
+	if err != nil {
+		slog.Error("Erro ao buscar alvos habilitados para comando Discord", "error", err)
+		return []domain.CheckResult{}
+	}
+
+	targets := make([]domain.Target, 0, len(targetPtrs))
+	for _, t := range targetPtrs {
+		if t != nil {
+			targets = append(targets, *t)
+		}
+	}
+
+	results, logs := checker.CheckTargets(ctx, targets, defaultTimeout)
+	if checkLogRepo != nil && len(logs) > 0 {
+		if err := checkLogRepo.CreateBatch(ctx, logs); err != nil {
+			slog.Error("Falha ao persistir check_logs de checagem sob demanda", "error", err)
+		}
+	}
+
+	return results
+}
+
+func (b *Bot) Setup(
+	ctx context.Context,
+	targetRepo database.TargetRepository,
+	checkLogRepo database.CheckLogRepository,
+	defaultTimeout time.Duration,
+) (chan struct{}, error) {
 	if err := b.RegisterCommands(); err != nil {
 		return nil, err
 	}
 
-	// TODO: preciso melhorar a criação/registro dos handlers, ta muito acoplado com a função anônima
 	triggerChan := make(chan struct{}, 1)
-	b.RegisterHandlers(func() []checker.CheckResult {
+	b.RegisterHandlers(func() []domain.CheckResult {
 		select {
 		case triggerChan <- struct{}{}:
 		default:
 		}
-		return checker.CheckAll(ctx, cfg.TargetURLs)
+		return runOnDemandChecks(ctx, targetRepo, checkLogRepo, defaultTimeout)
 	})
 
 	return triggerChan, nil
@@ -92,7 +131,7 @@ func (b *Bot) Close() {
 	b.session.Close()
 }
 
-func (b *Bot) SendAlert(result checker.CheckResult) error {
+func (b *Bot) SendAlert(result domain.CheckResult) error {
 	embed := createEmbed(result)
 
 	if result.Error != "" {

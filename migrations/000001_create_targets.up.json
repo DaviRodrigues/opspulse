@@ -1,0 +1,23 @@
+[
+  {
+    "create": "targets"
+  },
+  {
+    "createIndexes": "targets",
+    "indexes": [
+      {
+        "key": {
+          "url": 1
+        },
+        "name": "idx_targets_url_unique",
+        "unique": true
+      },
+      {
+        "key": {
+          "created_at": -1
+        },
+        "name": "idx_targets_created_at"
+      }
+    ]
+  }
+]

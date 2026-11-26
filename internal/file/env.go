@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DaviRodrigues/opspulse/internal/errs"
+	"github.com/DaviRodrigues/opspulse/internal/domain"
 	"github.com/joho/godotenv"
 	_ "github.com/joho/godotenv/autoload"
 )
@@ -42,7 +42,7 @@ func (e *EnvFile) LoadDurationEnv(envVariable string, fallback string) (time.Dur
 
 	interval, err := time.ParseDuration(value)
 	if err != nil {
-		return 0, fmt.Errorf("%w: %v", errs.ErrInvalidInterval, value)
+		return 0, fmt.Errorf("%w: %v", domain.ErrInvalidInterval, value)
 	}
 	return interval, nil
 }

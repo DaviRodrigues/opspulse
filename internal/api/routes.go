@@ -4,12 +4,18 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (s *Server) registerRoutes() {
-	s.router.Get("/health", s.handleHealth)
+func targetRoutes(r chi.Router, targetHandler TargetHandler) {
+	r.Get("/targets", targetHandler.ListTargets)
+	r.Post("/targets", targetHandler.CreateTarget)
+	r.Get("/targets/status", targetHandler.GetStatus)
+	r.Get("/targets/events", targetHandler.HandleSSE)
+	r.Get("/targets/{id}", targetHandler.GetTarget)
+	r.Put("/targets/{id}", targetHandler.UpdateTarget)
+	r.Patch("/targets/{id}", targetHandler.PatchTarget)
+	r.Delete("/targets/{id}", targetHandler.DeleteTarget)
+}
 
-	s.router.Route("/api/v1", func(r chi.Router) {
-		r.Get("/status", s.getStatus)
-
-		r.Get("/events", s.handleSSE)
-	})
+func checkLogRoutes(r chi.Router, checkLogHandler CheckLogHandler) {
+	r.Get("/check-logs", checkLogHandler.ListCheckLogs)
+	r.Get("/check-logs/{id}", checkLogHandler.GetCheckLog)
 }

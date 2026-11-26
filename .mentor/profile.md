@@ -12,9 +12,11 @@ Histórico de evolução, tópicos dominados, pontos de bloqueio e diagnóstico 
    - Preocupação constante com escalabilidade e desacoplamento, separando claramente domínios de configuração (12-Factor App) e camadas no frontend (React + Tailwind modular).
 2. **Mentalidade de "Mão na Massa" e Aprendizado Ativo:**
    - Digita e implementa todas as soluções, buscando compreender a raiz do problema em vez de aceitar correções superficiais ou mágicas.
-   - Excelente evolução em testes de integração simulados (`httptest.Server`, `t.Setenv`, testes de concorrência com canais).
+   - Excelente evolução em testes de integração simulados (`httptest.Server`, `t.Setenv`, testes de concorrência com canais e convenção `testdata/`).
 3. **Atenção à Observabilidade e Produção:**
    - Foco precoce em logs estruturados com `slog`, metadados contextuais (`app`, `env`) e warnings de segurança para ambientes produtivos.
+4. **Centralização e Eliminação de Código Duplicado:**
+   - Iniciativa de unificar todas as opções de fallback em uma struct imutável de pacote (`defaultFallback`), eliminando magic strings e hardcoding.
 
 ---
 
@@ -25,18 +27,18 @@ Histórico de evolução, tópicos dominados, pontos de bloqueio e diagnóstico 
 2. **Ciclo de Vida e Efeitos Colaterais Assíncronos:**
    - *Go (Orquestração):* Bloqueio acidental de fluxo ao invocar `server.Start()` síncrono antes do monitoramento em background.
    - *React (Estado Efêmero):* Declarar instâncias de conexão (`let eventSourceRef`) no escopo local do hook, perdendo a referência a cada re-renderização do componente em vez de usar `useRef`.
-3. **Engessamento de Testes durante Refatorações:**
-   - Ao trocar bibliotecas ou centralizar lógica em novas structs (ex: `FileDefault`), os testes quebraram por dependerem de acoplamento direto de I/O em vez de interfaces mockáveis ou testes em memória (`[]byte`).
+3. **Engessamento e Acoplamento de Testes Unitários:**
+   - Acoplar testes unitários a arquivos de documentação pública (`.env.example`) ou testar cenários de fallback passando arquivos de fixture populados (`envTest`), mascarando o comportamento real de fallbacks em tempo de execução.
 4. **Erros Silenciosos de Configuração:**
-   - Tratamento com `_ = godotenv.Load()` que engolia erros de sintaxe no `.env` e retorno de erro em variáveis opcionais com fallback.
+   - Tratamento com `_ = godotenv.Load()` que engolia erros de sintaxe no `.env` e retorno prematuro de erro em variáveis opcionais não declaradas.
 
 ---
 
 ### Plano de Melhorias & Diretrizes para o Próximo Nível
 1. **Design de Ciclo de Vida Antes do Código:**
    - Antes de iniciar um recurso assíncrono ou com estado, desenhar mentalmente: *"Quem instancia? Quem consome? Quem encerra? O que acontece se a rede cair ou o consumidor for lento?"*.
-2. **Refatoração Orientada a Contratos (Test-First Refactor):**
-   - Garantir que as interfaces (`TargetLoader`, `Checker`, `Broker`) tenham seus contratos validados por testes com dados em memória *antes* de alterar a implementação concreta de disco ou rede.
+2. **Separação Clara de Testes (Carga vs Fallback vs Override):**
+   - Manter testes de carga completa isolados em `testdata/`, testes de fallback isolados (sem arquivos de entrada e com variáveis limpas) e testes de override via `t.Setenv`.
 3. **Resiliência e Engenharia de Caos:**
    - Implementar padrões de produção como *Exponential Backoff com Jitter*, *Circuit Breakers* e tratamento de *Slow Consumers* (Backpressure).
 4. **Transição para Infraestrutura como Código (Terraform/Cloud):**
@@ -69,6 +71,10 @@ Habilidades e conceitos consolidados, demonstrados com autonomia e explicados na
 - **2026-10-01** — `strategy-pattern-file-loaders` ([0007-strategy-pattern-file-loaders.md](file:///home/smu/repositories-git/go-project/.mentor/records/0007-strategy-pattern-file-loaders.md))
   - Padrão Strategy com Higher-Order Functions para decodificadores flexíveis (JSON/YAML).
   - Desacoplamento de leitura I/O e parsing através da interface `TargetLoader` e Factory pattern.
+- **2026-10-01** — `config-fallback-centralization-and-test-isolation` ([0008-config-fallback-centralization-and-test-isolation.md](file:///home/smu/repositories-git/go-project/.mentor/records/0008-config-fallback-centralization-and-test-isolation.md))
+  - Centralização de defaults/fallbacks de configuração com struct privada imutável (`defaultFallback`).
+  - Isolamento de fixtures de teste na convenção `testdata/` e distinção entre testes de carga completa vs fallback real.
+  - Automação de tarefas de desenvolvimento com `Makefile` e scripts seguros.
 
 ---
 

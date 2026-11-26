@@ -4,3 +4,4 @@ terraform/
 .github/
 log/
 README.md
+web/opspulse-frontend/node_modules/

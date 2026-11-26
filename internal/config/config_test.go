@@ -2,6 +2,9 @@ package config
 
 import (
 	"log/slog"
+	"os"
+	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -17,20 +20,20 @@ func TestEnvLoadOk(t *testing.T) {
 		t.Fatalf("não esperava erro, mas recebeu: %v", err)
 	}
 
-	if len(cfg.Monitor.TargetURLs) != 2 {
-		t.Errorf("esperava 2 URLs, recebeu: %d", len(cfg.Monitor.TargetURLs))
-	}
-
 	if cfg.Monitor.Interval != 15*time.Second {
 		t.Errorf("esperava intervalo 15s, recebeu: %v", cfg.Monitor.Interval)
 	}
 
+	if cfg.Monitor.DefaultTimeout != 5*time.Second {
+		t.Errorf("esperava DefaultTimeout 5s, recebeu: %v", cfg.Monitor.DefaultTimeout)
+	}
+
 	if cfg.Discord.Token != defaultFallback.Discord.Token {
-		t.Errorf("esperava token 'meu-token-secreto', recebeu: %s", cfg.Discord.Token)
+		t.Errorf("esperava token %q, recebeu: %q", defaultFallback.Discord.Token, cfg.Discord.Token)
 	}
 
 	if cfg.App.Name != defaultFallback.App.Name {
-		t.Errorf("esperava app name 'custom-pulse', recebeu: %s", cfg.App.Name)
+		t.Errorf("esperava app name %q, recebeu: %q", defaultFallback.App.Name, cfg.App.Name)
 	}
 
 	if !cfg.App.IsProduction() {
@@ -42,7 +45,7 @@ func TestEnvLoadOk(t *testing.T) {
 	}
 
 	if cfg.Server.Port != defaultFallback.Server.Port {
-		t.Errorf("esperava fallback para SERVER_PORT %s, recebeu: %s", cfg.Server.Port, defaultFallback.Server.Port)
+		t.Errorf("esperava fallback para SERVER_PORT %s, recebeu: %s", defaultFallback.Server.Port, cfg.Server.Port)
 	}
 }
 
@@ -81,7 +84,7 @@ func TestParseLogLevel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			lvl:= ParseLogLevel(tt.input)
+			lvl := ParseLogLevel(tt.input)
 
 			if !tt.expectError && lvl != tt.expected {
 				t.Errorf("ParseLogLevel(%q) = %v, esperava %v", tt.input, lvl, tt.expected)
@@ -90,13 +93,56 @@ func TestParseLogLevel(t *testing.T) {
 	}
 }
 
-func TestServerConfig_Fallback(t *testing.T) {
+func TestServerConfig_FallbackAndCORS(t *testing.T) {
+	t.Setenv("CORS_ALLOWED_ORIGINS", "")
 	cfg, err := LoadServerConfig(file.NewEnvFile())
 	if err != nil {
 		t.Fatalf("não esperava erro ao carregar server config: %v", err)
 	}
 
 	if cfg.Port != defaultFallback.Server.Port {
-		t.Errorf("esperava fallback para SERVER_PORT %s, recebeu: %s", cfg.Port, defaultFallback.Server.Port)
+		t.Errorf("esperava fallback para SERVER_PORT %s, recebeu: %s", defaultFallback.Server.Port, cfg.Port)
+	}
+
+	expectedDefaultOrigins := []string{"http://localhost:5173", "http://localhost:5174"}
+	if !slices.Equal(cfg.CORSAllowedOrigins, expectedDefaultOrigins) {
+		t.Errorf("esperava fallback CORSAllowedOrigins=%v, recebeu: %v", expectedDefaultOrigins, cfg.CORSAllowedOrigins)
+	}
+
+	t.Setenv("CORS_ALLOWED_ORIGINS", " http://localhost:3000 , , https://opspulse.local , ")
+	cfgCustom, err := LoadServerConfig(file.NewEnvFile())
+	if err != nil {
+		t.Fatalf("não esperava erro ao carregar server config customizado: %v", err)
+	}
+
+	expectedCustom := []string{"http://localhost:3000", "https://opspulse.local"}
+	if !slices.Equal(cfgCustom.CORSAllowedOrigins, expectedCustom) {
+		t.Errorf("esperava CORSAllowedOrigins=%v, recebeu: %v", expectedCustom, cfgCustom.CORSAllowedOrigins)
+	}
+}
+
+func TestLoadMonitorConfig_NoTargetsFileDependency(t *testing.T) {
+	nonExistentTargetFile := filepath.Join(t.TempDir(), "missing", "target.json")
+	t.Setenv("MONITOR_TARGETS_FILE", nonExistentTargetFile)
+	t.Setenv("MONITOR_DEFAULT_TIMEOUT", "7s")
+	t.Setenv("MONITOR_INTERVAL", "20s")
+
+	cfg, err := LoadMonitorConfig(file.NewEnvFile())
+	if err != nil {
+		t.Fatalf("esperava sucesso sem arquivo de targets, recebeu erro: %v", err)
+	}
+
+	if cfg.Interval != 20*time.Second {
+		t.Errorf("esperava Interval=20s, recebeu %v", cfg.Interval)
+	}
+	if cfg.DefaultTimeout != 7*time.Second {
+		t.Errorf("esperava DefaultTimeout=7s, recebeu %v", cfg.DefaultTimeout)
+	}
+
+	if _, statErr := os.Stat(nonExistentTargetFile); !os.IsNotExist(statErr) {
+		t.Errorf("não esperava criação do arquivo %s", nonExistentTargetFile)
+	}
+	if _, statErr := os.Stat("./target/target.json"); !os.IsNotExist(statErr) {
+		t.Errorf("não esperava criação de ./target/target.json")
 	}
 }

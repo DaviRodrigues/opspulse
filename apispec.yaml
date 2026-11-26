@@ -1,0 +1,68 @@
+info:
+  title: OpsPulse API
+  description: HTTP API for managing monitored targets, querying check logs, and streaming live health events.
+  version: 1.0.0
+  contact:
+    name: OpsPulse
+naming:
+  operationId: method-path
+  schemaNames: short
+typeMapping:
+  - goType: time.Duration
+    openapiType:
+      type: integer
+      format: int64
+      description: Duration in nanoseconds (Go time.Duration)
+  - goType: go.mongodb.org/mongo-driver/v2/bson.ObjectID
+    openapiType:
+      type: string
+      pattern: "^[0-9a-fA-F]{24}$"
+      description: MongoDB ObjectID hex string
+framework:
+  responsePatterns:
+    - callRegex: ^WriteHeader$
+      recvTypeRegex: ^net/http\.ResponseWriter$
+      typeArgIndex: -1
+      statusFromArg: true
+    - callRegex: ^Write$
+      recvTypeRegex: ^net/http\.ResponseWriter$
+      typeFromArg: true
+      deref: true
+      rawBody: true
+    - callRegex: ^Error$
+      recvTypeRegex: ^net/http$
+      statusArgIndex: 2
+      typeArgIndex: 1
+      statusFromArg: true
+      typeFromArg: true
+      defaultContentType: text/plain; charset=utf-8
+    - callRegex: ^NotFound$
+      recvTypeRegex: ^net/http$
+      statusArgIndex: -1
+      typeArgIndex: -1
+      defaultStatus: 404
+    - callRegex: ^Redirect$
+      recvTypeRegex: ^net/http$
+      statusArgIndex: 3
+      typeArgIndex: -1
+      statusFromArg: true
+    - callRegex: ^ServeFile$
+      recvTypeRegex: ^net/http$
+      statusArgIndex: -1
+      typeArgIndex: -1
+      defaultStatus: 200
+      defaultContentType: application/yaml
+      opaqueBody: true
+    - callRegex: (?:^Set$)
+      typeArgIndex: -1
+      defaultStatus: 200
+      requireResponseDestination: true
+      destFromReceiver: true
+      contentTypeFromHeaderWrite: true
+      opaqueBody: true
+    - callRegex: ^Encode$
+      recvTypeRegex: .*json(iter)?\.\*?Encoder
+      typeFromArg: true
+      deref: true
+      requireResponseDestination: true
+      destFromReceiver: true
