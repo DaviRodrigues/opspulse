@@ -97,31 +97,62 @@ func buildMigrateDatabaseURL(uri, dbName string) (string, error) {
 		return "", errors.New("database URI is required")
 	}
 
-	u, err := url.Parse(trimmedURI)
-	if err != nil {
-		return "", fmt.Errorf("invalid database URI: %w", err)
+	scheme, rest, found := strings.Cut(trimmedURI, "://")
+	if !found || scheme == "" {
+		return "", fmt.Errorf("invalid database URI: missing scheme")
 	}
-	if u.Scheme != "mongodb" && u.Scheme != "mongodb+srv" {
-		return "", fmt.Errorf("unsupported database URI scheme %q", u.Scheme)
+	scheme = strings.ToLower(scheme)
+	if scheme != "mongodb" && scheme != "mongodb+srv" {
+		return "", fmt.Errorf("unsupported database URI scheme %q", scheme)
 	}
-	if u.Host == "" {
+
+	// Strip fragment if present
+	if fragIdx := strings.IndexByte(rest, '#'); fragIdx >= 0 {
+		rest = rest[:fragIdx]
+	}
+
+	var rawQuery string
+	if qIdx := strings.IndexByte(rest, '?'); qIdx >= 0 {
+		rawQuery = rest[qIdx+1:]
+		rest = rest[:qIdx]
+	}
+
+	var authority, path string
+	if slashIdx := strings.IndexByte(rest, '/'); slashIdx >= 0 {
+		authority = rest[:slashIdx]
+		path = rest[slashIdx:]
+	} else {
+		authority = rest
+	}
+
+	hostPart := authority
+	if atIdx := strings.LastIndexByte(authority, '@'); atIdx >= 0 {
+		hostPart = authority[atIdx+1:]
+	}
+	if strings.TrimSpace(hostPart) == "" {
 		return "", errors.New("database URI must include a host")
+	}
+	for _, h := range strings.Split(hostPart, ",") {
+		if strings.TrimSpace(h) == "" {
+			return "", errors.New("database URI contains an empty host entry")
+		}
 	}
 
 	resolvedDB := strings.Trim(strings.TrimSpace(dbName), "/")
 	if resolvedDB == "" {
-		resolvedDB = strings.Trim(u.Path, "/")
+		resolvedDB = strings.Trim(path, "/")
 	}
 	if resolvedDB == "" {
 		return "", errors.New("database name is required")
 	}
-	u.Path = "/" + resolvedDB
 
-	q := u.Query()
+	q, err := url.ParseQuery(rawQuery)
+	if err != nil {
+		return "", fmt.Errorf("invalid database URI query: %w", err)
+	}
 	if !q.Has("authSource") {
 		q.Set("authSource", "admin")
 	}
-	u.RawQuery = q.Encode()
 
-	return u.String(), nil
+	return fmt.Sprintf("%s://%s/%s?%s", scheme, authority, resolvedDB, q.Encode()), nil
 }

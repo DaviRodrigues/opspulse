@@ -2,8 +2,41 @@ package main
 
 import (
 	"net/url"
+	"strings"
 	"testing"
 )
+
+func parseMongoURIForTest(t *testing.T, raw string) (scheme, host, path string, query url.Values) {
+	t.Helper()
+	var rest string
+	var ok bool
+	scheme, rest, ok = strings.Cut(raw, "://")
+	if !ok {
+		t.Fatalf("output URL %q missing scheme separator", raw)
+	}
+	var rawQuery string
+	if qIdx := strings.IndexByte(rest, '?'); qIdx >= 0 {
+		rawQuery = rest[qIdx+1:]
+		rest = rest[:qIdx]
+	}
+	var authority string
+	if slashIdx := strings.IndexByte(rest, '/'); slashIdx >= 0 {
+		authority = rest[:slashIdx]
+		path = rest[slashIdx:]
+	} else {
+		authority = rest
+	}
+	host = authority
+	if atIdx := strings.LastIndexByte(authority, '@'); atIdx >= 0 {
+		host = authority[atIdx+1:]
+	}
+	var err error
+	query, err = url.ParseQuery(rawQuery)
+	if err != nil {
+		t.Fatalf("output URL %q has invalid query %q: %v", raw, rawQuery, err)
+	}
+	return scheme, host, path, query
+}
 
 func TestBuildMigrateDatabaseURL(t *testing.T) {
 	tests := []struct {
@@ -134,20 +167,16 @@ func TestBuildMigrateDatabaseURL(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			parsed, err := url.Parse(got)
-			if err != nil {
-				t.Fatalf("output URL %q failed url.Parse: %v", got, err)
+			gotScheme, gotHost, gotPath, q := parseMongoURIForTest(t, got)
+			if gotScheme != tc.wantScheme {
+				t.Errorf("expected scheme %q, got %q", tc.wantScheme, gotScheme)
 			}
-			if parsed.Scheme != tc.wantScheme {
-				t.Errorf("expected scheme %q, got %q", tc.wantScheme, parsed.Scheme)
+			if gotHost != tc.wantHost {
+				t.Errorf("expected host %q, got %q", tc.wantHost, gotHost)
 			}
-			if parsed.Host != tc.wantHost {
-				t.Errorf("expected host %q, got %q", tc.wantHost, parsed.Host)
+			if gotPath != tc.wantPath {
+				t.Errorf("expected path %q, got %q", tc.wantPath, gotPath)
 			}
-			if parsed.Path != tc.wantPath {
-				t.Errorf("expected path %q, got %q", tc.wantPath, parsed.Path)
-			}
-			q := parsed.Query()
 			if len(q["authSource"]) != 1 || q.Get("authSource") != tc.wantAuthSource {
 				t.Errorf("expected single authSource=%q, got %v", tc.wantAuthSource, q["authSource"])
 			}
